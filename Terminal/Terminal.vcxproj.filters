@@ -1,0 +1,117 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="源文件">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;def;odl;idl;hpj;bat;asm;asmx</Extensions>
+    </Filter>
+    <Filter Include="头文件">
+      <UniqueIdentifier>{93995380-89BD-4b04-88EB-625FBE52EBFB}</UniqueIdentifier>
+      <Extensions>h;hh;hpp;hxx;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="资源文件">
+      <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
+      <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
+    </Filter>
+    <Filter Include="vterm">
+      <UniqueIdentifier>{a85dae7d-424f-445f-a6c2-26ed958b6ebc}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Terminal">
+      <UniqueIdentifier>{75409737-3ea0-41dc-8638-f7c9b8896768}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="Main.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="vterm\encoding.c">
+      <Filter>vterm</Filter>
+    </ClCompile>
+    <ClCompile Include="vterm\keyboard.c">
+      <Filter>vterm</Filter>
+    </ClCompile>
+    <ClCompile Include="vterm\mouse.c">
+      <Filter>vterm</Filter>
+    </ClCompile>
+    <ClCompile Include="vterm\parser.c">
+      <Filter>vterm</Filter>
+    </ClCompile>
+    <ClCompile Include="vterm\pen.c">
+      <Filter>vterm</Filter>
+    </ClCompile>
+    <ClCompile Include="vterm\screen.c">
+      <Filter>vterm</Filter>
+    </ClCompile>
+    <ClCompile Include="vterm\state.c">
+      <Filter>vterm</Filter>
+    </ClCompile>
+    <ClCompile Include="vterm\unicode.c">
+      <Filter>vterm</Filter>
+    </ClCompile>
+    <ClCompile Include="vterm\vterm.c">
+      <Filter>vterm</Filter>
+    </ClCompile>
+    <ClCompile Include="Terminal.cpp">
+      <Filter>Terminal</Filter>
+    </ClCompile>
+    <ClCompile Include="Terminal.Draw.cpp">
+      <Filter>Terminal</Filter>
+    </ClCompile>
+    <ClCompile Include="Terminal.Event.cpp">
+      <Filter>Terminal</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="vterm\fullwidth.inc">
+      <Filter>vterm</Filter>
+    </None>
+    <None Include="vterm\encoding\DECdrawing.inc">
+      <Filter>vterm</Filter>
+    </None>
+    <None Include="vterm\encoding\uk.inc">
+      <Filter>vterm</Filter>
+    </None>
+    <None Include="binary1.bin">
+      <Filter>资源文件</Filter>
+    </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="vterm\rect.h">
+      <Filter>vterm</Filter>
+    </ClInclude>
+    <ClInclude Include="vterm\utf8.h">
+      <Filter>vterm</Filter>
+    </ClInclude>
+    <ClInclude Include="vterm\vterm.h">
+      <Filter>vterm</Filter>
+    </ClInclude>
+    <ClInclude Include="vterm\vterm_internal.h">
+      <Filter>vterm</Filter>
+    </ClInclude>
+    <ClInclude Include="vterm\vterm_keycodes.h">
+      <Filter>vterm</Filter>
+    </ClInclude>
+    <ClInclude Include="resource.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Terminal.hpp">
+      <Filter>Terminal</Filter>
+    </ClInclude>
+    <ClInclude Include="OptionFile.hpp">
+      <Filter>头文件</Filter>
+    </ClInclude>
+  </ItemGroup>
+  <ItemGroup>
+    <ResourceCompile Include="Resource.rc">
+      <Filter>资源文件</Filter>
+    </ResourceCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <Image Include="Software.ico">
+      <Filter>资源文件</Filter>
+    </Image>
+    <Image Include="Icon.png">
+      <Filter>资源文件</Filter>
+    </Image>
+  </ItemGroup>
+</Project>
