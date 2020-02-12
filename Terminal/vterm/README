@@ -1,0 +1,4 @@
+Note that this copy of libvterm IS MODIFIED to compile on Windows: Dynamic-sized arrays are changed to alloca().
+There might also be other changes I fail to remember.
+
+Obtain the original copy here: http://www.leonerd.org.uk/code/libvterm/
