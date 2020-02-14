@@ -4,7 +4,7 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # Edited
-[Rr]un[Dd]ir/
+[Rr]un[Dd]ir*
 *.o
 Terminal/Terminal
 [Rr]esource.*
