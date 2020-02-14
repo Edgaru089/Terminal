@@ -25,7 +25,11 @@
 #include <sys/types.h>
 #include <sys/ioctl.h>
 #include <signal.h>
-#endif
+#endif // SFML_SYSTEM_WINDOWS
+
+#ifdef USE_CYGWIN_DLL
+#include "CygwinPosixWrapper.hpp"
+#endif // USE_CYGWIN_DLL
 
 using namespace std;
 using namespace sf;
@@ -41,8 +45,18 @@ Terminal* term;
 
 RenderWindow* win;
 
-
+#ifndef USE_CYGWIN_DLL
 int main(int argc, char* argv[]) {
+#else
+int main() {
+
+	cygwin::padding padding;
+	
+	cygInit("cygwin1.dll");
+
+	int argc = __argc;
+	char** argv = __argv;
+#endif
 
 	option.loadFromFile("Terminal.ini");
 	int rows, cols;
@@ -108,7 +122,9 @@ int main(int argc, char* argv[]) {
 		newTitle = title;
 		titleLock.unlock();
 	};
-	term->launch(option.getContent("shell"));
+	if (!term->launch(option.getContent("shell"))) {
+		//return 1;
+	}
 
 	while (win->isOpen()) {
 

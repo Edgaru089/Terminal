@@ -103,7 +103,7 @@ private:
 	std::recursive_mutex tlock;
 	std::thread* reader;
 
-#ifdef SFML_SYSTEM_WINDOWS
+#if defined SFML_SYSTEM_WINDOWS && !defined USE_CYGWIN_DLL
 	HANDLE childStdInPipeRead, childStdInPipeWrite;
 	HANDLE childStdOutPipeRead, childStdOutPipeWrite;
 	HANDLE childProcessHandle;

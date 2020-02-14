@@ -3,6 +3,10 @@
 #include "vterm/vterm.h"
 #include "vterm/vterm_internal.h"
 
+#ifdef USE_CYGWIN_DLL
+#include "CygwinPosixWrapper.hpp"
+#endif
+
 #include <climits>
 #include <cstring>
 
@@ -85,7 +89,7 @@ public:
 	// Platform-depedent write function
 	static void writeCall(const char* s, size_t len, void* data) {
 		Terminal* term = reinterpret_cast<Terminal*>(data);
-#ifdef SFML_SYSTEM_WINDOWS
+#if defined SFML_SYSTEM_WINDOWS && !defined USE_CYGWIN_DLL
 		DWORD size;
 		WriteFile(term->childStdInPipeWrite, s, len, &size, NULL);
 #else
@@ -95,21 +99,22 @@ public:
 
 	// Platform-depedent reader that runs in another thread
 	static void reader(Terminal* term) {
-#ifdef SFML_SYSTEM_WINDOWS
+#if defined SFML_SYSTEM_WINDOWS && !defined USE_CYGWIN_DLL
 		char buffer[1024];
 		DWORD readlen;
-		while (term->running && ReadFile(term->childStdOutPipeRead, buffer, sizeof(buffer), &readlen, NULL)) {
+		while (term->running && ReadFile(term->childStdOutPipeRead, buffer, sizeof(buffer) - 1, &readlen, NULL)) {
+			buffer[readlen] = '\0';
+			fprintf(stderr, "Output:%s\n", buffer);
 			term->tlock.lock();
 			vterm_input_write(term->term, buffer, readlen);
 			term->tlock.unlock();
 		}
-		//running = false;
 #else
 		char buffer[1024];
 		ssize_t readlen;
 		while (term->running && (readlen = read(term->pty, buffer, sizeof(buffer))) >= 0) {
 			term->tlock.lock();
-			buffer[readlen] = '\0';
+			//buffer[readlen] = '\0';
 			//printf("Read %d bytes: %s\n", (int)readlen, buffer);
 			vterm_input_write(term->term, buffer, readlen);
 			term->tlock.unlock();
@@ -167,7 +172,7 @@ Terminal::Terminal(
 Terminal::~Terminal() {
 	running = false;
 
-#ifdef SFML_SYSTEM_WINDOWS
+#if defined SFML_SYSTEM_WINDOWS && !defined USE_CYGWIN_DLL
 	// Let's close the write side of handle StdIn and StdOut
 	CloseHandle(childStdInPipeWrite);
 	CloseHandle(childStdOutPipeWrite);
@@ -177,6 +182,9 @@ Terminal::~Terminal() {
 	GetExitCodeProcess(childProcessHandle, &exitCode);
 	if (exitCode == STILL_ACTIVE)
 		TerminateProcess(childProcessHandle, 0);
+#else
+	kill(child, SIGTERM);
+	close(pty);
 #endif
 
 	if (reader) {
@@ -184,7 +192,7 @@ Terminal::~Terminal() {
 			reader->join();
 		delete reader;
 	}
-#ifdef SFML_SYSTEM_WINDOWS
+#if defined SFML_SYSTEM_WINDOWS && !defined USE_CYGWIN_DLL
 	if (processRunningChecker) {
 		if (processRunningChecker->joinable())
 			processRunningChecker->join();
@@ -199,7 +207,7 @@ Terminal::~Terminal() {
 
 
 bool Terminal::launch(const string& childCommand) {
-#ifdef SFML_SYSTEM_WINDOWS
+#if defined SFML_SYSTEM_WINDOWS && !defined USE_CYGWIN_DLL
 	SetConsoleCP(CP_UTF8);
 	//SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_INPUT);
 	//SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_PROCESSING);
@@ -209,7 +217,7 @@ bool Terminal::launch(const string& childCommand) {
 	saAttr.nLength = sizeof(SECURITY_ATTRIBUTES);
 	saAttr.bInheritHandle = TRUE;
 	saAttr.lpSecurityDescriptor = NULL;
-#define ERROR_EXIT(str) {lastError = "Windows Terminal::launch: " str; return false;}
+#define ERROR_EXIT(str) {lastError = "Windows Terminal::launch: " str; vterm_input_write(term, lastError.c_str(), lastError.size()); invalidate(); return false;}
 	// Create a pipe for the child process's STDOUT.
 	if (!CreatePipe(&childStdOutPipeRead, &childStdOutPipeWrite, &saAttr, 0))
 		ERROR_EXIT("Error on StdoutRd CreatePipe");
@@ -255,6 +263,7 @@ bool Terminal::launch(const string& childCommand) {
 	}
 	// Close handles.
 	childProcessHandle = pi.hProcess;
+	fprintf(stderr, "Child PID=%d\n", (int)GetProcessId(childProcessHandle));
 	CloseHandle(pi.hThread);
 
 	// Process running checker
@@ -273,29 +282,30 @@ bool Terminal::launch(const string& childCommand) {
 				if (cbSetWindowTitle)
 					cbSetWindowTitle(winTitle);
 			}
+			fprintf(stderr, "ExitCode:%d\n", (int)exitCode);
 		}
 	);
 
 #undef ERROR_EXIT
 
 #else
-	int ret = forkpty(&pty, 0, 0, 0);
+	struct winsize ws;
+	ws.ws_row = rows;
+	ws.ws_col = cols;
+	int ret = forkpty(&pty, 0, 0, &ws);
 	if (ret == 0) {
 		string shell = childCommand;
 		setenv("TERM", "xterm-256color", 1);
-		execlp(shell.c_str(), shell.c_str(), NULL);
+		const char* args[] = { shell.data(),0 };
+		execvp(shell.data(), args);
 	} else if (ret == -1) {
+		printf("Unix Terminal::launch: forkpty() failed");
 		lastError = ("Unix Terminal::launch: forkpty() failed");
 		return false;
 	} else {
 		child = ret;
 		printf("childid = %d\n", child);
-	}
-
-	struct winsize ws;
-	ws.ws_row = rows;
-	ws.ws_col = cols;
-	ioctl(pty, TIOCSWINSZ, &ws);
+}
 #endif
 
 	reader = new thread(TermCb::reader, this);

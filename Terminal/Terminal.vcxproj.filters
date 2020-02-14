@@ -19,6 +19,12 @@
     <Filter Include="Terminal">
       <UniqueIdentifier>{75409737-3ea0-41dc-8638-f7c9b8896768}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Font">
+      <UniqueIdentifier>{160ffce0-a759-4dc3-8004-262fbc942fca}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Cygwin">
+      <UniqueIdentifier>{1222b128-0769-4c8a-bfc1-75c4f681ed8d}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -60,6 +66,12 @@
     <ClCompile Include="Terminal.Event.cpp">
       <Filter>Terminal</Filter>
     </ClCompile>
+    <ClCompile Include="cygwin\cygload.cc">
+      <Filter>Cygwin</Filter>
+    </ClCompile>
+    <ClCompile Include="CygwinPosixWrapper.cpp">
+      <Filter>Cygwin</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="vterm\fullwidth.inc">
@@ -99,6 +111,12 @@
     </ClInclude>
     <ClInclude Include="OptionFile.hpp">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="cygwin\cygload.h">
+      <Filter>Cygwin</Filter>
+    </ClInclude>
+    <ClInclude Include="CygwinPosixWrapper.hpp">
+      <Filter>Cygwin</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
