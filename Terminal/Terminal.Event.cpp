@@ -26,7 +26,6 @@ namespace {
 
 
 void Terminal::processEvent(RenderWindow& win, Event e) {
-	std::lock_guard<recursive_mutex> guard(tlock);
 
 	switch (e.type) {
 	case Event::TextEntered:
@@ -134,17 +133,11 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 			cols = e.size.width / cellSize.x;
 			rows = e.size.height / cellSize.y;
 			vterm_set_size(term, rows, cols);
-			//vterm_screen_flush_damage(vterm_obtain_screen(term));
+
+			frontend->resizeTerminal(rows, cols);
+
 			invalidate();
 		}
-#ifndef SFML_SYSTEM_WINDOWS
-		struct winsize ws;
-		ws.ws_row = rows;
-		ws.ws_col = cols;
-		ioctl(pty, TIOCSWINSZ, &ws);
-		//fprintf(stderr, "Sending SIGWINCH(%d) to process %d\n", (int)SIGWINCH, (int)child);
-		//kill(-tcgetpgrp(pty), SIGWINCH);
-#endif
 		break;
 	}
 #ifndef SFML_SYSTEM_WINDOWS
@@ -154,6 +147,22 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 		break;
 	}
 #endif
+	}
+}
+
+
+void Terminal::update() {
+
+	char buffer[4096];
+	size_t readlen;
+
+	while (readlen = frontend->tryRead(buffer, sizeof(buffer))) {
+		vterm_input_write(term, buffer, readlen);
+	}
+
+	if (!frontend->isRunning()) {
+		fprintf(stderr, "Terminal::update(): frontend session ended\n");
+		running = false;
 	}
 }
 

@@ -19,6 +19,9 @@
     <Filter Include="Terminal">
       <UniqueIdentifier>{75409737-3ea0-41dc-8638-f7c9b8896768}</UniqueIdentifier>
     </Filter>
+    <Filter Include="Frontend">
+      <UniqueIdentifier>{0f17887f-63ff-4333-82d9-d513b4389023}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp">
@@ -60,6 +63,15 @@
     <ClCompile Include="Terminal.Event.cpp">
       <Filter>Terminal</Filter>
     </ClCompile>
+    <ClCompile Include="SystemFrontend.cpp">
+      <Filter>Frontend</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemFrontend.Windows.cpp">
+      <Filter>Frontend</Filter>
+    </ClCompile>
+    <ClCompile Include="SystemFrontend.Unix.cpp">
+      <Filter>Frontend</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="vterm\fullwidth.inc">
@@ -99,6 +111,12 @@
     </ClInclude>
     <ClInclude Include="OptionFile.hpp">
       <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="Frontend.hpp">
+      <Filter>Frontend</Filter>
+    </ClInclude>
+    <ClInclude Include="SystemFrontend.hpp">
+      <Filter>Frontend</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>

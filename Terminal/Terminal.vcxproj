@@ -148,6 +148,9 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
+    <ClCompile Include="SystemFrontend.cpp" />
+    <ClCompile Include="SystemFrontend.Unix.cpp" />
+    <ClCompile Include="SystemFrontend.Windows.cpp" />
     <ClCompile Include="Terminal.cpp" />
     <ClCompile Include="Terminal.Draw.cpp" />
     <ClCompile Include="Terminal.Event.cpp" />
@@ -168,8 +171,10 @@
     <None Include="vterm\fullwidth.inc" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Frontend.hpp" />
     <ClInclude Include="OptionFile.hpp" />
     <ClInclude Include="resource.h" />
+    <ClInclude Include="SystemFrontend.hpp" />
     <ClInclude Include="Terminal.hpp" />
     <ClInclude Include="vterm\rect.h" />
     <ClInclude Include="vterm\utf8.h" />

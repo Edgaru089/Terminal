@@ -21,6 +21,8 @@
 #include <signal.h>
 #endif
 
+#include "Frontend.hpp"
+
 
 struct VTerm;
 struct VTermScreen;
@@ -29,10 +31,8 @@ struct VTermState;
 class Terminal :public sf::NonCopyable {
 public:
 
-	Terminal(int cols = 140, int rows = 40, sf::Vector2i cellSize = sf::Vector2i(10, 20), int charSize = 18, bool useBold = false);
+	Terminal(Frontend* frontend, int cols = 140, int rows = 40, sf::Vector2i cellSize = sf::Vector2i(10, 20), int charSize = 18, bool useBold = false);
 	~Terminal();
-
-	bool launch(const std::string& childCommand);
 
 	void stop();
 
@@ -50,6 +50,8 @@ public:
 
 	void processEvent(sf::RenderWindow& win, sf::Event event);
 
+	void update();
+
 public:
 
 	bool isRunning() {
@@ -65,12 +67,6 @@ public:
 	std::function<void()> bell;
 	std::function<void(std::string)> cbSetWindowTitle;
 	std::function<void(int width, int height)> cbSetWindowSize;
-
-public:
-
-	void lock() { tlock.lock(); }
-	void unlock() { tlock.unlock(); }
-	bool try_lock() { return tlock.try_lock(); }
 
 private:
 
@@ -100,17 +96,8 @@ private:
 	void* screencb; // TODO: This is ugly; it's of type VTermScreenCallbacks*
 
 	std::atomic_bool running;
-	std::recursive_mutex tlock;
-	std::thread* reader;
 
-#ifdef SFML_SYSTEM_WINDOWS
-	HANDLE childStdInPipeRead, childStdInPipeWrite;
-	HANDLE childStdOutPipeRead, childStdOutPipeWrite;
-	HANDLE childProcessHandle;
-	std::thread* processRunningChecker;
-#else
-	int pty, child;
-#endif
+	Frontend* frontend;
 
 };
 

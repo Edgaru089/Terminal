@@ -35,6 +35,7 @@ using namespace sf;
 
 #include "OptionFile.hpp"
 #include "Terminal.hpp"
+#include "SystemFrontend.hpp"
 
 OptionFile option;
 Terminal* term;
@@ -96,24 +97,16 @@ int main(int argc, char* argv[]) {
 	arrtop.setPrimitiveType(PrimitiveType::Triangles);
 	vector<Vertex> arr;
 
-	term = new Terminal(cols, rows, cellSize, charSize, useBold);
+	term = new Terminal(new SystemFrontend(option.getContent("shell"), cols, rows), cols, rows, cellSize, charSize, useBold);
 	term->cbSetWindowSize = [&](int width, int height) {
 		win->setSize(Vector2u(width, height));
 		win->setView(View(FloatRect(0, 0, width, height)));
 	};
-	mutex titleLock;
-	string newTitle;
 	term->cbSetWindowTitle = [&](const string& title) {
-		titleLock.lock();
-		newTitle = title;
-		titleLock.unlock();
+		win->setTitle(String::fromUtf8(title.begin(), title.end()));
 	};
-	term->launch(option.getContent("shell"));
 
 	while (win->isOpen()) {
-
-		if (!term->isRunning())
-			win->close();
 
 		Event e;
 		while (win->pollEvent(e)) {
@@ -124,14 +117,10 @@ int main(int argc, char* argv[]) {
 			term->processEvent(*win, e);
 		}
 
-		titleLock.lock();
-		if (!newTitle.empty()) {
-			win->setTitle(String::fromUtf8(newTitle.begin(), newTitle.end()));
-			newTitle.clear();
-		}
-		titleLock.unlock();
+		sleep(microseconds(1000));
+		term->update();
 
-		if (term->redrawIfRequired(font, arr)) {
+		if (term->redrawIfRequired(font, arr) || fullscreen) {
 			win->clear();
 
 			win->draw(arr.data(), arr.size(), PrimitiveType::Triangles, &font.getTexture(charSize));
@@ -153,8 +142,11 @@ int main(int argc, char* argv[]) {
 			win->display();
 
 		} else {
-			sleep(microseconds(16667));
+			sleep(microseconds(15667));
 		}
+
+		if (!term->isRunning())
+			win->close();
 	}
 
 	delete win;
