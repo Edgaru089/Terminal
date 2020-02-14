@@ -42,9 +42,9 @@ public:
 	void invalidate();
 
 	// Returns true if redrawed, false otherwise
-	bool redrawIfRequired(sf::Font& font, std::vector<sf::Vertex>& target);
+	bool redrawIfRequired(sf::Font& font, std::vector<sf::Vertex>& target, sf::Color bgColor = sf::Color::Black);
 	// Forces a redraw
-	void forceRedraw(sf::Font& font, std::vector<sf::Vertex>& target);
+	void forceRedraw(sf::Font& font, std::vector<sf::Vertex>& target, sf::Color bgColor = sf::Color::Black);
 
 public:
 

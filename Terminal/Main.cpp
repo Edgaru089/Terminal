@@ -43,6 +43,22 @@ Terminal* term;
 RenderWindow* win;
 
 
+Sprite coverAutoscale(Texture& texture, Vector2f asize) {
+	Sprite sp(texture);
+	Vector2f tsize(texture.getSize());
+	if (tsize.x / tsize.y > asize.x / asize.y) {
+		float scale = asize.y / tsize.y;
+		sp.setScale(scale, scale);
+		sp.setPosition(-(tsize.x * scale - asize.x) / 2.0f, 0);
+	} else {
+		float scale = asize.x / tsize.x;
+		sp.setScale(scale, scale);
+		sp.setPosition(0, -(tsize.y * scale - asize.y) / 2.0f);
+	}
+	return sp;
+}
+
+
 int main(int argc, char* argv[]) {
 
 	option.loadFromFile("Terminal.ini");
@@ -64,7 +80,19 @@ int main(int argc, char* argv[]) {
 		cols = atoi(option.getContent("cols").c_str());
 		mode = VideoMode(cols * cellSize.x, rows * cellSize.y);
 	}
+	string bgFilename = option.getContent("background_image");
+	Uint8 bgDarkness = atoi(option.getContent("bg_darkness").c_str());
+	Texture bgTexture;
+	Sprite bgSprite;
 
+	if (!bgFilename.empty()) {
+		if (!bgTexture.loadFromFile(bgFilename))
+			bgFilename.clear();
+	}
+	if (bgFilename.empty())
+		bgDarkness = 255;
+	else
+		bgSprite = coverAutoscale(bgTexture, Vector2f(mode.width, mode.height));
 
 	Font font;
 #ifdef SFML_SYSTEM_WINDOWS
@@ -93,6 +121,8 @@ int main(int argc, char* argv[]) {
 	win->setVerticalSyncEnabled(true);
 	win->setFramerateLimit(60);
 
+	VertexBuffer buf(PrimitiveType::Triangles, VertexBuffer::Dynamic);
+	buf.create(2 * rows * cols * 4);
 	VertexArray arrtop;
 	arrtop.setPrimitiveType(PrimitiveType::Triangles);
 	vector<Vertex> arr;
@@ -109,21 +139,38 @@ int main(int argc, char* argv[]) {
 	while (win->isOpen()) {
 
 		Event e;
+		e.type = Event::Count;
 		while (win->pollEvent(e)) {
 			if (e.type == Event::Closed)
 				win->close();
-			else if (e.type == Event::Resized)
+			else if (e.type == Event::Resized) {
 				win->setView(View(FloatRect(0, 0, e.size.width, e.size.height)));
+
+				if (e.size.width / cellSize.x != cols || e.size.height / cellSize.y != rows) {
+					cols = e.size.width / cellSize.x;
+					rows = e.size.height / cellSize.y;
+					buf.create(2 * rows * cols * 4);
+				}
+
+				bgSprite = coverAutoscale(bgTexture, Vector2f(e.size.width, e.size.height));
+			}
 			term->processEvent(*win, e);
 		}
 
-		sleep(microseconds(1000));
+		if (e.type != Event::Count)
+			sleep(microseconds(1000));
 		term->update();
 
-		if (term->redrawIfRequired(font, arr) || fullscreen) {
+		bool redrawn;
+		if ((redrawn = term->redrawIfRequired(font, arr, bgFilename.empty() ? Color::Black : Color(0, 0, 0, bgDarkness))) || fullscreen) {
 			win->clear();
 
-			win->draw(arr.data(), arr.size(), PrimitiveType::Triangles, &font.getTexture(charSize));
+			if (!bgFilename.empty())
+				win->draw(bgSprite);
+
+			if (redrawn)
+				buf.update(arr.data(), arr.size(), 0);
+			win->draw(buf, 0, arr.size(), &font.getTexture(charSize));
 
 			if (fullscreen) {
 				arrtop.clear();
@@ -142,7 +189,7 @@ int main(int argc, char* argv[]) {
 			win->display();
 
 		} else {
-			sleep(microseconds(15667));
+			sleep(microseconds(15000));
 		}
 
 		if (!term->isRunning())

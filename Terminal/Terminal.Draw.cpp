@@ -46,18 +46,17 @@ namespace {
 }
 
 
-bool Terminal::redrawIfRequired(Font& font, vector<Vertex>& target) {
+bool Terminal::redrawIfRequired(Font& font, vector<Vertex>& target, Color bgColor) {
 	if (needRedraw) {
 		needRedraw = false;
-		forceRedraw(font, target);
+		forceRedraw(font, target, bgColor);
 		return true;
 	} else
 		return false;
 }
 
 
-void Terminal::forceRedraw(Font& font, vector<Vertex>& target) {
-	std::lock_guard<recursive_mutex> guard(tlock);
+void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 
 	if (charTopOffset == -4096) {
 		// Guess the character centering offset
@@ -67,6 +66,8 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target) {
 	}
 
 	target.clear();
+	if (bgColor != Color::Black)
+		pushVertexColor(target, FloatRect(0, 0, (cols + 1) * cellSize.x, (rows + 1) * cellSize.y), bgColor);
 
 	VTermPos curpos;
 	VTermScreen* scr = vterm_obtain_screen(term);

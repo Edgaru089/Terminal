@@ -8,7 +8,7 @@
 #include <SFML/Network.hpp>
 
 
-// Derivatives should have a construcer that does all the init work
+// Derivatives should have a construcor that does all the init work
 class Frontend :public sf::NonCopyable {
 public:
 
