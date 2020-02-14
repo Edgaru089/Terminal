@@ -84,10 +84,14 @@ int main(int argc, char* argv[]) {
 	Uint8 bgDarkness = atoi(option.getContent("bg_darkness").c_str());
 	Texture bgTexture;
 	Sprite bgSprite;
+	bool useVbo = VertexBuffer::isAvailable();
 
 	if (!bgFilename.empty()) {
 		if (!bgTexture.loadFromFile(bgFilename))
 			bgFilename.clear();
+		else {
+			bgTexture.setSmooth(true);
+		}
 	}
 	if (bgFilename.empty())
 		bgDarkness = 255;
@@ -119,10 +123,11 @@ int main(int argc, char* argv[]) {
 	}
 	win->setKeyRepeatEnabled(true);
 	win->setVerticalSyncEnabled(true);
-	win->setFramerateLimit(60);
+	//win->setFramerateLimit(60);
 
 	VertexBuffer buf(PrimitiveType::Triangles, VertexBuffer::Dynamic);
-	buf.create(2 * rows * cols * 4);
+	if (useVbo)
+		buf.create(2 * rows * cols * 4);
 	VertexArray arrtop;
 	arrtop.setPrimitiveType(PrimitiveType::Triangles);
 	vector<Vertex> arr;
@@ -162,15 +167,18 @@ int main(int argc, char* argv[]) {
 		term->update();
 
 		bool redrawn;
-		if ((redrawn = term->redrawIfRequired(font, arr, bgFilename.empty() ? Color::Black : Color(0, 0, 0, bgDarkness))) || fullscreen) {
+		if ((redrawn = term->redrawIfRequired(font, arr, bgDarkness == 255 ? Color::Black : Color(0, 0, 0, bgDarkness))) || fullscreen) {
 			win->clear();
 
-			if (!bgFilename.empty())
+			if (bgDarkness != 255)
 				win->draw(bgSprite);
 
-			if (redrawn)
-				buf.update(arr.data(), arr.size(), 0);
-			win->draw(buf, 0, arr.size(), &font.getTexture(charSize));
+			if (useVbo) {
+				if (redrawn)
+					buf.update(arr.data(), arr.size(), 0);
+				win->draw(buf, 0, arr.size(), &font.getTexture(charSize));
+			} else
+				win->draw(arr.data(), arr.size(), PrimitiveType::Triangles, &font.getTexture(charSize));
 
 			if (fullscreen) {
 				arrtop.clear();
@@ -189,7 +197,7 @@ int main(int argc, char* argv[]) {
 			win->display();
 
 		} else {
-			sleep(microseconds(15000));
+			sleep(microseconds(5000));
 		}
 
 		if (!term->isRunning())

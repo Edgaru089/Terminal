@@ -50,11 +50,19 @@ public:
 			return 0;
 		}
 		case VTERM_PROP_CURSORVISIBLE:
-		{
 			term->cursorVisible = val->boolean;
 			term->invalidate();
+			return 1;
+		case VTERM_PROP_MOUSE:
+			term->mouseState = val->number;
+			return 1;
+		case VTERM_PROP_ALTSCREEN:
+			term->altScreen = (bool)val->boolean;
+			return 1;
+		default:
+			return 1;
 		}
-		}
+		// Should never reach here
 		return 1;
 	}
 
@@ -107,15 +115,9 @@ Terminal::Terminal(
 	vterm_state_set_bold_highbright(state, true);
 
 	// Setup callbacks
-	//VTermStateCallbacks statecb;
-	//memset(&statecb, 0, sizeof(statecb));
-	//statecb.resize = &termResize;
-	//vterm_state_set_callbacks(vterm_obtain_state(term), &statecb, 0);
-
 	VTermScreenCallbacks* screencb = new VTermScreenCallbacks;
 	memset(screencb, 0, sizeof(VTermScreenCallbacks));
 	screencb->settermprop = &TermCb::termProp;
-	//screencb->resize = &TermCb::termResize;
 	screencb->damage = &TermCb::termDamage;
 	screencb->movecursor = &TermCb::termMoveCursor;
 	screencb->sb_pushline = &TermCb::termPushLine;

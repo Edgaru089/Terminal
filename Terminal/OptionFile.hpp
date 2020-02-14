@@ -22,6 +22,8 @@ public:
 				continue;
 			mark = line.substr(0, pos);
 			cont = line.substr(pos + 1, line.length() - pos - 1);
+			if (cont.back() == '\r')
+				cont.pop_back();
 			this->data[mark] = cont;
 		}
 		return true;

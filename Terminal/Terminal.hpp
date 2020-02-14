@@ -93,7 +93,14 @@ private:
 	VTermScreen* screen;
 	VTermState* state;
 
-	void* screencb; // TODO: This is ugly; it's of type VTermScreenCallbacks*
+	void* screencb = nullptr; // TODO: This is ugly; it's of type VTermScreenCallbacks*
+
+	// One of VTERM_PROP_MOUSE_NONE, VTERM_PROP_MOUSE_CLICK, VTERM_PROP_MOUSE_DRAG, VTERM_PROP_MOUSE_MOVE
+	// 0 means MOUSE_NONE
+	int mouseState = 0;
+	bool altScreen = false; // Is the alt-screen enabled?
+
+	float scrollLength = .0f; // Cached sum of Event.MouseScrollMoveEvent
 
 	std::atomic_bool running;
 

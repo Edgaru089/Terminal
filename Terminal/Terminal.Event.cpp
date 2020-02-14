@@ -68,20 +68,36 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 	case Event::MouseButtonPressed:
 	case Event::MouseButtonReleased:
 	{
-		int b = 0;
-		if (e.mouseButton.button == Mouse::Left)
-			b = 1; // Left
-		else if (e.mouseButton.button == Mouse::Middle)
-			b = 2; // Middle
-		else if (e.mouseButton.button == Mouse::Right)
-			b = 3; // Right;
-		vterm_mouse_button(term, b, e.type == Event::MouseButtonPressed, getModifier());
+		if (mouseState != VTERM_PROP_MOUSE_NONE) {
+			int b = 0;
+			if (e.mouseButton.button == Mouse::Left)
+				b = 1; // Left
+			else if (e.mouseButton.button == Mouse::Middle)
+				b = 2; // Middle
+			else if (e.mouseButton.button == Mouse::Right)
+				b = 3; // Right;
+			vterm_mouse_button(term, b, e.type == Event::MouseButtonPressed, getModifier());
+		}
 		break;
 	}
 	case Event::MouseWheelMoved:
 	{
-		vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), true, getModifier());
-		vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), false, getModifier());
+		if (mouseState != VTERM_PROP_MOUSE_NONE) {
+			vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), true, getModifier());
+			vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), false, getModifier());
+		} else if (altScreen) {
+			// Let's press the UP/DOWN key 3 times
+			VTermModifier mod = getModifier();
+			if (e.mouseWheel.delta > 0) {
+				vterm_keyboard_key(term, VTERM_KEY_UP, mod);
+				vterm_keyboard_key(term, VTERM_KEY_UP, mod);
+				vterm_keyboard_key(term, VTERM_KEY_UP, mod);
+			} else {
+				vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
+				vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
+				vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
+			}
+		} // TODO Scrollback
 		break;
 	}
 	case Event::KeyPressed:
@@ -147,8 +163,8 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 		break;
 	}
 #endif
+		}
 	}
-}
 
 
 void Terminal::update() {
