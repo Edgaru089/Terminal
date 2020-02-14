@@ -5,7 +5,7 @@ using namespace std;
 
 #ifndef SFML_SYSTEM_WINDOWS
 
-SystemFrontend::SystemFrontend(const string& shell, int cols, int rows) {
+SystemFrontend::SystemFrontend(const string& shell, int rows, int cols) {
 	struct winsize ws;
 	ws.ws_row = rows;
 	ws.ws_col = cols;

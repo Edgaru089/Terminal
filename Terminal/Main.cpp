@@ -36,6 +36,7 @@ using namespace sf;
 #include "OptionFile.hpp"
 #include "Terminal.hpp"
 #include "SystemFrontend.hpp"
+#include "WslFrontend.hpp"
 
 OptionFile option;
 Terminal* term;
@@ -132,7 +133,16 @@ int main(int argc, char* argv[]) {
 	arrtop.setPrimitiveType(PrimitiveType::Triangles);
 	vector<Vertex> arr;
 
-	term = new Terminal(new SystemFrontend(option.getContent("shell"), cols, rows), cols, rows, cellSize, charSize, useBold);
+#ifdef SFML_SYSTEM_WINDOWS
+	bool useWsl = option.getContent("use_wsl_frontend") == "true";
+	if (useWsl)
+		term = new Terminal(new WslFrontend(option.getContent("wsl_backend_file"), option.getContent("shell"), rows, cols),
+			rows, cols, cellSize, charSize, useBold);
+	else
+		term = new Terminal(new SystemFrontend(option.getContent("shell"), rows, cols), rows, cols, cellSize, charSize, useBold);
+#else
+	term = new Terminal(new SystemFrontend(option.getContent("shell"), rows, cols), rows, cols, cellSize, charSize, useBold);
+#endif
 	term->cbSetWindowSize = [&](int width, int height) {
 		win->setSize(Vector2u(width, height));
 		win->setView(View(FloatRect(0, 0, width, height)));
@@ -162,8 +172,8 @@ int main(int argc, char* argv[]) {
 			term->processEvent(*win, e);
 		}
 
-		if (e.type != Event::Count)
-			sleep(microseconds(1000));
+//		if (e.type != Event::Count)
+//			sleep(microseconds(500));
 		term->update();
 
 		bool redrawn;
@@ -197,7 +207,7 @@ int main(int argc, char* argv[]) {
 			win->display();
 
 		} else {
-			sleep(microseconds(5000));
+			sleep(microseconds(2000));
 		}
 
 		if (!term->isRunning())

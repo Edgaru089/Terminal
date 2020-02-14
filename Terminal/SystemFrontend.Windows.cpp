@@ -5,7 +5,7 @@ using namespace std;
 
 #ifdef SFML_SYSTEM_WINDOWS
 
-SystemFrontend::SystemFrontend(const string& shell, int cols, int rows) {
+SystemFrontend::SystemFrontend(const string& shell, int rows, int cols) {
 	SetConsoleCP(CP_UTF8);
 	//SetConsoleMode(GetStdHandle(STD_INPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_INPUT);
 	//SetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), ENABLE_VIRTUAL_TERMINAL_PROCESSING);

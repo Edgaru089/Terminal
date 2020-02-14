@@ -25,7 +25,7 @@
 class SystemFrontend :public Frontend {
 public:
 
-	SystemFrontend(const std::string& shell, int cols, int rows);
+	SystemFrontend(const std::string& shell, int rows, int cols);
 	~SystemFrontend() override;
 
 public:
@@ -40,8 +40,6 @@ public:
 	virtual void resizeTerminal(int rows, int cols) override;
 
 private:
-
-	friend class SystemFrontendCb;
 
 	std::deque<char> bufRead;
 	std::mutex bufReadLock;

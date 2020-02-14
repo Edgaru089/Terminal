@@ -1,0 +1,2 @@
+For some unknown reason, compiling with sfml-network-s causes a segment fault when invoking socket().
+    Linking with the non-static counterpart does not have the issue.

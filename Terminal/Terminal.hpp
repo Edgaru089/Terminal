@@ -31,7 +31,7 @@ struct VTermState;
 class Terminal :public sf::NonCopyable {
 public:
 
-	Terminal(Frontend* frontend, int cols = 140, int rows = 40, sf::Vector2i cellSize = sf::Vector2i(10, 20), int charSize = 18, bool useBold = false);
+	Terminal(Frontend* frontend, int rows = 40, int cols = 140, sf::Vector2i cellSize = sf::Vector2i(10, 20), int charSize = 18, bool useBold = false);
 	~Terminal();
 
 	void stop();

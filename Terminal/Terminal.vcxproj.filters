@@ -72,6 +72,9 @@
     <ClCompile Include="SystemFrontend.Unix.cpp">
       <Filter>Frontend</Filter>
     </ClCompile>
+    <ClCompile Include="WslFrontend.cpp">
+      <Filter>Frontend</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <None Include="vterm\fullwidth.inc">
@@ -116,6 +119,12 @@
       <Filter>Frontend</Filter>
     </ClInclude>
     <ClInclude Include="SystemFrontend.hpp">
+      <Filter>Frontend</Filter>
+    </ClInclude>
+    <ClInclude Include="WslFrontend.hpp">
+      <Filter>Frontend</Filter>
+    </ClInclude>
+    <ClInclude Include="WslOpcodes.hpp">
       <Filter>Frontend</Filter>
     </ClInclude>
   </ItemGroup>

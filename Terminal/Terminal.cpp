@@ -99,7 +99,7 @@ public:
 
 Terminal::Terminal(
 	Frontend* frontend,
-	int cols, int rows,
+	int rows, int cols,
 	sf::Vector2i cellSize,
 	int charSize, bool useBold)
 	:frontend(frontend), cols(cols), rows(rows), cellSize(cellSize), charSize(charSize), hasBold(useBold), winTitle("Terminal"), charTopOffset(-4096), cursorVisible(true) {
