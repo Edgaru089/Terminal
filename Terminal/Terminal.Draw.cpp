@@ -85,45 +85,32 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 
 			FloatRect cellRect(j * cellSize.x, i * cellSize.y, cellSize.x * cell.width, cellSize.y);
 
-			Color col(cell.bg.rgb.red, cell.bg.rgb.green, cell.bg.rgb.blue);
+			Color bg(cell.bg.rgb.red, cell.bg.rgb.green, cell.bg.rgb.blue);
+			Color fg(cell.fg.rgb.red, cell.fg.rgb.green, cell.fg.rgb.blue);
 			if (cell.attrs.reverse)
-				reverse(col);
-			if (cursorVisible && curpos.row == i && curpos.col == j)
-				reverse(col);
+				swap(bg, fg);
+			if (cursorVisible && curpos.row == i && curpos.col == j) {
+				reverse(bg);
+				reverse(fg);
+			}
 
-			if (col != Color::Black)
-				pushVertexColor(target, cellRect, col);
+			if (bg != Color::Black)
+				pushVertexColor(target, cellRect, bg);
 			if (cell.attrs.underline)
-				pushVertexColor(target, FloatRect(cellRect.left, cellRect.top + cellRect.height - 2, cellRect.width, 1), reverseOf(col));
+				pushVertexColor(target, FloatRect(cellRect.left, cellRect.top + cellRect.height - 2, cellRect.width, 1), fg);
 			//if (cell.attrs.strike) // I'm too lazy to somehow get the strikeline position
 				//pushVertexColor(*arr, FloatRect(cellRect.left, roundf(cellRect.top + cellRect.height * 0.6), cellRect.width, 1), reverseOf(col));
 
 			if (cell.chars[0] && cell.chars[0] != ' ') {
-				//printf("%d (%c\n", (int)cell.chars[0], (char)cell.chars[0]);
 				Glyph glyph = font.getGlyph(cell.chars[0], charSize, hasBold && cell.attrs.bold, 0.0F);
-
-				Color col(cell.fg.rgb.red, cell.fg.rgb.green, cell.fg.rgb.blue);
-				if (cell.attrs.reverse)
-					reverse(col);
-				if (cursorVisible && curpos.row == i && curpos.col == j)
-					reverse(col);
-
 
 				FloatRect renderRect;
 				renderRect.left = roundf(j * cellSize.x + (cellSize.x * cell.width - glyph.advance) / 2.0f + glyph.bounds.left);
 				renderRect.width = glyph.bounds.width;
-				//renderRect.top = roundf(i * cellSize.y + (cellSize.y + glyph.bounds.top)/* - cellSize.y * 0.2f*/);
-				//renderRect.top = roundf((i + 1) * cellSize.y - (cellSize.y - charSize + 4) / 2.0f + glyph.bounds.top);
 				renderRect.top = roundf((i + 1) * cellSize.y + glyph.bounds.top - charTopOffset);
 				renderRect.height = glyph.bounds.height;
 
-				//pushVertexTextureColor(arrfg, renderRect, glyph.textureRect, col);
-				pushVertexTextureColor(target, renderRect, glyph.textureRect, col);
-				/*
-				Text text(String(cell.chars[0]), font, charSize);
-				text.setPosition(cellRect.left, cellRect.top);
-				text.setFillColor(col);
-				win->draw(text);*/
+				pushVertexTextureColor(target, renderRect, glyph.textureRect, fg);
 			}
 
 			j += cell.width - 1;

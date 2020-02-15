@@ -128,7 +128,7 @@ int main(int argc, char* argv[]) {
 
 	VertexBuffer buf(PrimitiveType::Triangles, VertexBuffer::Dynamic);
 	if (useVbo)
-		buf.create(2 * rows * cols * 4);
+		buf.create((size_t)2 * rows * cols * 4);
 	VertexArray arrtop;
 	arrtop.setPrimitiveType(PrimitiveType::Triangles);
 	vector<Vertex> arr;
@@ -164,7 +164,7 @@ int main(int argc, char* argv[]) {
 				if (e.size.width / cellSize.x != cols || e.size.height / cellSize.y != rows) {
 					cols = e.size.width / cellSize.x;
 					rows = e.size.height / cellSize.y;
-					buf.create(2 * rows * cols * 4);
+					buf.create((size_t)2 * rows * cols * 4);
 				}
 
 				bgSprite = coverAutoscale(bgTexture, Vector2f(e.size.width, e.size.height));
