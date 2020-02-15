@@ -25,7 +25,7 @@ atomic_bool running;
 int pty, child;
 
 Int32 rows = 140, cols = 40;
-char* shell = const_cast<char*>("bash");
+char* shell = const_cast<char*>("bash"), *workingDir = const_cast<char*>("~");
 char* ipAddr = const_cast<char*>("127.0.0.1");
 int port = 54323;
 vector<char*> args = { nullptr };
@@ -42,6 +42,8 @@ void processArgs(int argc, char* argv[]) {
 
 		if (!strncmp(argv[i], "SHELL=", 6))
 			shell = argv[i] + 6;
+		if (!strncmp(argv[i], "CHDIR=", 6))
+			workingDir = argv[i] + 6;
 		if (!strncmp(argv[i], "ARG=", 4))
 			args.push_back(argv[i] + 4);
 
@@ -67,6 +69,7 @@ int main(int argc, char* argv[]) {
 	ws.ws_col = cols;
 	int ret = forkpty(&pty, 0, 0, &ws);
 	if (ret == 0) {
+		chdir(workingDir);
 		setenv("TERM", "xterm-256color", 1);
 		setenv("SHELL", shell, 1);
 		execvp(shell, args.data());

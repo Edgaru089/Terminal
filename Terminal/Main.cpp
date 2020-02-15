@@ -137,7 +137,7 @@ int main(int argc, char* argv[]) {
 #ifdef SFML_SYSTEM_WINDOWS
 	bool useWsl = option.getContent("use_wsl_frontend") == "true";
 	if (useWsl)
-		term = new Terminal(new WslFrontend(option.getContent("wsl_backend_file"), option.getContent("shell"), rows, cols),
+		term = new Terminal(new WslFrontend(option.getContent("wsl_backend_file"), option.getContent("shell"), option.getContent("wsl_working_dir"), rows, cols),
 			rows, cols, cellSize, charSize, useBold, scrollMaxLines);
 	else
 		term = new Terminal(new SystemFrontend(option.getContent("shell"), rows, cols), rows, cols, cellSize, charSize, useBold, scrollMaxLines);

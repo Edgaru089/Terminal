@@ -17,7 +17,7 @@
 class WslFrontend :public Frontend {
 public:
 
-	WslFrontend(const std::string& backendFilename, const std::string& wslShell, int rows, int cols);
+	WslFrontend(const std::string& backendFilename, const std::string& wslShell, const std::string& workingDirWsl, int rows, int cols);
 	~WslFrontend() override;
 
 public:
