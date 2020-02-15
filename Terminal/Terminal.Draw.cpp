@@ -72,13 +72,25 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 	VTermPos curpos;
 	VTermScreen* scr = vterm_obtain_screen(term);
 	vterm_state_get_cursorpos(vterm_obtain_state(term), &curpos);
+
 	for (int i = 0; i < rows; i++)
 		for (int j = 0; j < cols; j++) {
 
 			VTermScreenCell cell;
 
-			if (!vterm_screen_get_cell(scr, VTermPos{ i,j }, &cell))
-				continue;
+			if (altScreen) {
+				if (!vterm_screen_get_cell(scr, VTermPos{ i, j }, &cell))
+					continue;
+			} else {
+				if (i < scrollbackOffset) {
+					auto& line = scrollback[scrollback.size() - scrollbackOffset + i];
+					if (j < line.size())
+						cell = line[j];
+					else
+						continue;
+				} else if (!vterm_screen_get_cell(scr, VTermPos{ i - scrollbackOffset, j }, &cell))
+					continue;
+			}
 
 			vterm_state_convert_color_to_rgb(vterm_obtain_state(term), &cell.fg);
 			vterm_state_convert_color_to_rgb(vterm_obtain_state(term), &cell.bg);
@@ -89,7 +101,7 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 			Color fg(cell.fg.rgb.red, cell.fg.rgb.green, cell.fg.rgb.blue);
 			if (cell.attrs.reverse)
 				swap(bg, fg);
-			if (cursorVisible && curpos.row == i && curpos.col == j) {
+			if (cursorVisible && curpos.row == i - scrollbackOffset && curpos.col == j) {
 				reverse(bg);
 				reverse(fg);
 			}

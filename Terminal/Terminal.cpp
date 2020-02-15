@@ -81,13 +81,34 @@ public:
 	static int termPopLine(int col, VTermScreenCell* data, void* user) {
 		Terminal* term = reinterpret_cast<Terminal*>(user);
 		term->invalidate();
-		return 0;
+		if (term->scrollback.empty())
+			return 0;
+		else {
+			auto& back = term->scrollback.back();
+			memcpy(data, back.data(), min((size_t)col, back.size()) * sizeof(VTermScreenCell));
+			// Fill the extra cells
+			if (back.size() < col) {
+				VTermColor bg, fg;
+				vterm_state_get_default_colors(term->state, &fg, &bg);
+				for (int i = back.size(); i < col; i++) {
+					memset(data + i, 0, sizeof(VTermScreenCell));
+					data[i].width = 1;
+					data[i].fg = fg;
+					data[i].bg = bg;
+				}
+			}
+			term->scrollback.pop_back();
+			return 1;
+		}
 	}
 
 	static int termPushLine(int col, const VTermScreenCell* data, void* user) {
 		Terminal* term = reinterpret_cast<Terminal*>(user);
+		term->scrollback.emplace_back(vector<VTermScreenCell>(data, data + col));
+		while (term->scrollback.size() > term->scrollbackMaxLength)
+			term->scrollback.pop_front();
 		term->invalidate();
-		return 0;
+		return 1;
 	}
 
 	static void writeCall(const char* s, size_t len, void* data) {
@@ -101,8 +122,9 @@ Terminal::Terminal(
 	Frontend* frontend,
 	int rows, int cols,
 	sf::Vector2i cellSize,
-	int charSize, bool useBold)
-	:frontend(frontend), cols(cols), rows(rows), cellSize(cellSize), charSize(charSize), hasBold(useBold), winTitle("Terminal"), charTopOffset(-4096), cursorVisible(true) {
+	int charSize, bool useBold, int scrollbackMaxLength)
+	:frontend(frontend), cols(cols), rows(rows), cellSize(cellSize), charSize(charSize), hasBold(useBold),
+	scrollbackMaxLength(scrollbackMaxLength), winTitle("Terminal"), charTopOffset(-4096), cursorVisible(true) {
 
 	running = true;
 
@@ -124,7 +146,7 @@ Terminal::Terminal(
 	screencb->sb_popline = &TermCb::termPopLine;
 	screencb->bell = &TermCb::termBell;
 	vterm_screen_set_callbacks(screen, screencb, reinterpret_cast<void*>(this));
-	this->screencb = reinterpret_cast<void*>(screencb);
+	this->screencb = screencb;
 
 	VTermColor bg, fg;
 	vterm_color_rgb(&bg, 0, 0, 0);
@@ -144,12 +166,12 @@ Terminal::~Terminal() {
 
 	vterm_free(term);
 	if (screencb)
-		delete reinterpret_cast<VTermScreenCallbacks*>(screencb);
+		delete screencb;
 }
 
 
 void Terminal::stop() {
-	if (frontend&&frontend->isRunning())
+	if (frontend && frontend->isRunning())
 		frontend->stop();
 	running = false;
 }

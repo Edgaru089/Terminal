@@ -2,6 +2,8 @@
 #include "WslFrontend.hpp"
 #include "WslOpcodes.hpp"
 
+#ifdef SFML_SYSTEM_WINDOWS
+
 using namespace std;
 using namespace sf;
 
@@ -215,4 +217,6 @@ void WslFrontend::processPacket(Packet& p) {
 		fprintf(stderr, "WslFrontend::ProcessPacket: Warning: Unknown OpCode %d\n", (int)opcode);
 	}
 }
+
+#endif
 

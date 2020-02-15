@@ -39,10 +39,10 @@ private:
 	std::mutex bufReadLock;
 	std::thread* thReader = 0;
 
-	std::thread* processRunningChecker;
-	HANDLE childProcessHandle;
+	std::thread* processRunningChecker = 0;
+	HANDLE childProcessHandle = 0;
 
-	sf::TcpSocket* socket;
+	sf::TcpSocket* socket = 0;
 
 };
 

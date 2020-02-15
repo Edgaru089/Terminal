@@ -86,6 +86,7 @@ int main(int argc, char* argv[]) {
 	Texture bgTexture;
 	Sprite bgSprite;
 	bool useVbo = VertexBuffer::isAvailable();
+	int scrollMaxLines = atoi(option.getContent("scrollback_max_lines").c_str());
 
 	if (!bgFilename.empty()) {
 		if (!bgTexture.loadFromFile(bgFilename))
@@ -137,11 +138,11 @@ int main(int argc, char* argv[]) {
 	bool useWsl = option.getContent("use_wsl_frontend") == "true";
 	if (useWsl)
 		term = new Terminal(new WslFrontend(option.getContent("wsl_backend_file"), option.getContent("shell"), rows, cols),
-			rows, cols, cellSize, charSize, useBold);
+			rows, cols, cellSize, charSize, useBold, scrollMaxLines);
 	else
-		term = new Terminal(new SystemFrontend(option.getContent("shell"), rows, cols), rows, cols, cellSize, charSize, useBold);
+		term = new Terminal(new SystemFrontend(option.getContent("shell"), rows, cols), rows, cols, cellSize, charSize, useBold, scrollMaxLines);
 #else
-	term = new Terminal(new SystemFrontend(option.getContent("shell"), rows, cols), rows, cols, cellSize, charSize, useBold);
+	term = new Terminal(new SystemFrontend(option.getContent("shell"), rows, cols), rows, cols, cellSize, charSize, useBold, scrollMaxLines);
 #endif
 	term->cbSetWindowSize = [&](int width, int height) {
 		win->setSize(Vector2u(width, height));
@@ -172,8 +173,8 @@ int main(int argc, char* argv[]) {
 			term->processEvent(*win, e);
 		}
 
-//		if (e.type != Event::Count)
-//			sleep(microseconds(500));
+		//		if (e.type != Event::Count)
+		//			sleep(microseconds(500));
 		term->update();
 
 		bool redrawn;

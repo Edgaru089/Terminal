@@ -55,6 +55,13 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 		fprintf(stderr, "Main: Event::TextEntered, keycode=%d(%c), Ctrl:%s, Shift:%s, Alt:%s\n", (int)e.text.unicode, (char)e.text.unicode,
 			(mod & VTERM_MOD_CTRL) ? "Yes" : "No", (mod & VTERM_MOD_SHIFT) ? "Yes" : "No", (mod & VTERM_MOD_ALT) ? "Yes" : "No");
 		vterm_keyboard_unichar(term, e.text.unicode, getModifier());
+
+		// Let's also reset the scrollback position
+		if (!altScreen) {
+			scrollbackOffset = 0;
+			invalidate();
+		}
+
 		break;
 	}
 	case Event::MouseMoved:
@@ -97,7 +104,17 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 				vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
 				vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
 			}
-		} // TODO Scrollback
+		} else {
+			// Let's scroll back/forth
+			if (scrollbackOffset < 0)
+				scrollbackOffset = -scrollbackOffset;
+			if (e.mouseWheel.delta > 0) {
+				scrollbackOffset = min(scrollbackOffset + 3, (int)scrollback.size());
+			} else {
+				scrollbackOffset = max(scrollbackOffset - 3, 0);
+			}
+			invalidate();
+		}
 		break;
 	}
 	case Event::KeyPressed:
@@ -141,6 +158,13 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 			key = (VTermKey)(VTERM_KEY_FUNCTION((int)e.key.code - Keyboard::F1 + 1));
 		if (key != VTERM_KEY_NONE)
 			vterm_keyboard_key(term, key, getModifier());
+
+		// Let's also reset the scrollback position
+		if (!altScreen) {
+			scrollbackOffset = 0;
+			invalidate();
+		}
+
 		break;
 	}
 	case Event::Resized:
@@ -151,6 +175,9 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 			vterm_set_size(term, rows, cols);
 
 			frontend->resizeTerminal(rows, cols);
+
+			// Note that the scrollback buffer might have resized
+			scrollbackOffset = min(scrollbackOffset, (int)scrollback.size());
 
 			invalidate();
 		}
@@ -163,8 +190,8 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 		break;
 	}
 #endif
-		}
 	}
+}
 
 
 void Terminal::update() {

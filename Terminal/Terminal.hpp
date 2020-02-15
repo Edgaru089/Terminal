@@ -6,6 +6,7 @@
 #include <thread>
 #include <functional>
 #include <vector>
+#include <deque>
 
 #include <SFML/Graphics.hpp>
 
@@ -21,17 +22,15 @@
 #include <signal.h>
 #endif
 
+#include "vterm/vterm.h"
+
 #include "Frontend.hpp"
 
-
-struct VTerm;
-struct VTermScreen;
-struct VTermState;
 
 class Terminal :public sf::NonCopyable {
 public:
 
-	Terminal(Frontend* frontend, int rows = 40, int cols = 140, sf::Vector2i cellSize = sf::Vector2i(10, 20), int charSize = 18, bool useBold = false);
+	Terminal(Frontend* frontend, int rows = 40, int cols = 140, sf::Vector2i cellSize = sf::Vector2i(10, 20), int charSize = 18, bool useBold = false, int scrollbackMaxLength = 1000);
 	~Terminal();
 
 	void stop();
@@ -79,6 +78,7 @@ private:
 	sf::Vector2i cellSize;
 	int charSize;
 	bool hasBold;
+	int scrollbackMaxLength;
 
 	float charTopOffset;
 	bool cursorVisible;
@@ -93,14 +93,17 @@ private:
 	VTermScreen* screen;
 	VTermState* state;
 
-	void* screencb = nullptr; // TODO: This is ugly; it's of type VTermScreenCallbacks*
+	VTermScreenCallbacks* screencb = nullptr;
 
 	// One of VTERM_PROP_MOUSE_NONE, VTERM_PROP_MOUSE_CLICK, VTERM_PROP_MOUSE_DRAG, VTERM_PROP_MOUSE_MOVE
 	// 0 means MOUSE_NONE
 	int mouseState = 0;
 	bool altScreen = false; // Is the alt-screen enabled?
 
-	float scrollLength = .0f; // Cached sum of Event.MouseScrollMoveEvent
+	std::deque<std::vector<VTermScreenCell>> scrollback;
+
+	// Current scrollback offset, from the tail of the buffer
+	int scrollbackOffset = 0;
 
 	std::atomic_bool running;
 
