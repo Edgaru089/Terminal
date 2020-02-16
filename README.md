@@ -14,7 +14,7 @@ It does support:
  - Cross-platform (works both on Windows and Linux)
  - CJK (combining Hangul does not work)
  - Calling ioctl() on resize in WSL (with built-in WslFrontend and bundled wsl-backend)
- 
+
 It does not, but might in the future, support:
  - Selecting text
  - Custom color palette (now it uses a libvterm default, which looks like XTerm colors)

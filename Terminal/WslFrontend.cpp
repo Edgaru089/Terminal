@@ -30,7 +30,7 @@ WslFrontend::WslFrontend(const string& backendFilename, const string& wslShell, 
 
 	// Start the child process.
 	const char* fmtString = "wsl -e ./%s -- SHELL=%s CHDIR=%s ROWS=%d COLS=%d IP=127.0.0.1 PORT=%d";
-	char* commandline = new char[backendFilename.length() + wslShell.length() + strlen(fmtString) + 8];
+	char* commandline = new char[backendFilename.length() + wslShell.length() + workingDirWsl.length() + strlen(fmtString) + 8];
 	sprintf(commandline, fmtString, backendFilename.c_str(), wslShell.c_str(), workingDirWsl.c_str(), rows, cols, (int)port);
 	fprintf(stderr, "WslCommand: %s\n", commandline);
 	if (!CreateProcessA(
@@ -112,15 +112,16 @@ WslFrontend::~WslFrontend() {
 		socket->disconnect();
 	}
 
-	if (running) {
-		// Kill the child if it's still active for 500 milliseconds
-		DWORD exitCode = 0;
+	// Kill the child if it's still active for 500 milliseconds
+	DWORD exitCode = 0;
+	GetExitCodeProcess(childProcessHandle, &exitCode);
+	if (exitCode == STILL_ACTIVE) {
 		WaitForSingleObject(childProcessHandle, 500);
 		GetExitCodeProcess(childProcessHandle, &exitCode);
 		if (exitCode == STILL_ACTIVE)
 			TerminateProcess(childProcessHandle, 0);
-		CloseHandle(childProcessHandle);
 	}
+	CloseHandle(childProcessHandle);
 
 	if (thReader) {
 		if (thReader->joinable())
@@ -200,10 +201,8 @@ void WslFrontend::processPacket(Packet& p) {
 	switch (opcode) {
 	case OPCODE_STRING:
 	{
-		static string str;
-		p >> str;
 		bufReadLock.lock();
-		bufRead.insert(bufRead.end(), str.begin(), str.end());
+		bufRead.insert(bufRead.end(), reinterpret_cast<const char*>(p.getData()) + sizeof(Uint8) + sizeof(Uint32), reinterpret_cast<const char*>(p.getData()) + p.getDataSize());
 		bufReadLock.unlock();
 		break;
 	}
