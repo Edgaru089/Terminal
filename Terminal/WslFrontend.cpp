@@ -38,8 +38,12 @@ WslFrontend::WslFrontend(const string& backendFilename, const string& wslShell, 
 		commandline,            // Command line
 		NULL,                   // Process handle not inheritable
 		NULL,                   // Thread handle not inheritable
-		TRUE,                  // Handles are not inherited
+		TRUE,                   // Handles are not inherited
+#ifdef NDEBUG
 		CREATE_NO_WINDOW,       // No console window
+#else
+		NULL,                   // Use console window in debug
+#endif
 		NULL,                   // Use parent's environment block
 		NULL,                   // Use parent's working directory
 		&si,                    // Pointer to STARTUPINFO structure

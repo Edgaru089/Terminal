@@ -1,8 +1,7 @@
 #pragma once
 
-#include <SFML/Config.hpp>
 
-typedef sf::Uint8 OpCode;
+typedef unsigned char OpCode;
 #define OPCODE(code) (OpCode(code))
 
 // Packet:

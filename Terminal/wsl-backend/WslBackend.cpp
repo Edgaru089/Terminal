@@ -13,19 +13,18 @@
 #include <signal.h>
 #include <stdlib.h>
 
-#include <SFML/Network.hpp>
-
+#include "Packet.hpp"
+#include "Connection.hpp"
 #include "../WslOpcodes.hpp"
 
 using namespace std;
-using namespace sf;
 
 atomic_bool running;
 
 int pty, child;
 
-Int32 rows = 140, cols = 40;
-char* shell = const_cast<char*>("bash"), *workingDir = const_cast<char*>("~");
+int32_t rows = 140, cols = 40;
+char* shell = const_cast<char*>("bash"), * workingDir = const_cast<char*>("~");
 char* ipAddr = const_cast<char*>("127.0.0.1");
 int port = 54323;
 vector<char*> args = { nullptr };
@@ -56,7 +55,7 @@ void processArgs(int argc, char* argv[]) {
 	args.push_back(0);
 }
 
-TcpSocket* socket;
+Connection conn;
 thread* thReader;
 
 
@@ -70,8 +69,8 @@ int main(int argc, char* argv[]) {
 	int ret = forkpty(&pty, 0, 0, &ws);
 	if (ret == 0) {
 		chdir(workingDir);
-		setenv("TERM", "xterm-256color", 1);
-		setenv("SHELL", shell, 1);
+		//setenv("TERM", "xterm-256color", 1);
+		//setenv("SHELL", shell, 1);
 		execvp(shell, args.data());
 	} else if (ret == -1) {
 		fprintf(stderr, "WslBackend: forkpty() failed\n");
@@ -83,14 +82,12 @@ int main(int argc, char* argv[]) {
 
 	fprintf(stderr, "WslBackend: Shell=%s, (%dx%d), Connecting to %s Port %d\n", shell, cols, rows, ipAddr, (int)port);
 
-	socket = new TcpSocket();
-	if (socket->connect(IpAddress(ipAddr), port, seconds(5.0f)) != Socket::Done) {
-		delete socket;
-		fprintf(stderr, "WslBackend: Error: Timeout\n");
+	if (!conn.connect(ipAddr, port)) {
+		fprintf(stderr, "WslBackend: Error: Failure\n");
 		return 1;
 	}
 
-	fprintf(stderr, "WslBackend: Connected, Peer=%s, %d\n", socket->getRemoteAddress().toString().c_str(), (int)socket->getRemotePort());
+	fprintf(stderr, "WslBackend: Connected\n");
 
 	running = true;
 
@@ -102,51 +99,52 @@ int main(int argc, char* argv[]) {
 			while (running && (readlen = ::read(pty, buffer, sizeof(buffer))) >= 0) {
 				pack.clear();
 				// Optimize this!
-				pack << OPCODE_STRING;
+				pack.putChar(OPCODE_STRING);
 				//pack << string((const char*)data, len);
 				// Equivalent: This is how they do this
-				pack << (Uint32)readlen;
-				pack.append(buffer, readlen);
-				socket->send(pack);
+				pack.putUint32(readlen);
+				pack.putRawData(buffer, readlen);
+				conn.send(pack);
 			}
 			pack.clear();
-			pack << OPCODE_STOP;
-			socket->send(pack);
+			pack.putChar(OPCODE_STOP);
+			conn.send(pack);
 			running = false;
 		}
 	);
 
 	Packet pack;
 	string str;
-	while (running && (socket->receive(pack) == Socket::Done)) {
-		Uint8 opcode;
-		pack >> opcode;
+	while (running && conn.receive(pack)) {
+		unsigned char opcode = pack.getUint8();
+		uint32_t slen;
 		switch (opcode) {
 		case OPCODE_STRING:
-			pack >> str;
-			write(pty, str.c_str(), str.length());
+			slen = pack.getUint32();
+			write(pty, reinterpret_cast<const char*>(pack.getData()) + pack.getReadOffset(), slen);
 			break;
 		case OPCODE_RESIZE:
-			pack >> rows >> cols;
+			rows = pack.getInt32();
+			cols = pack.getInt32();
 			ws.ws_row = rows;
 			ws.ws_col = cols;
 			ioctl(pty, TIOCSWINSZ, &ws);
 			break;
 		case OPCODE_STOP:
 			running = false;
-			socket->disconnect();
+			conn.disconnect();
 			break;
 		default:
 			fprintf(stderr, "WslBackend: Warning: Unknown Opcode %d\n", (int)opcode);
 		}
 	}
 
-	socket->disconnect();
+	conn.disconnect();
 
 	if (thReader->joinable())
 		thReader->join();
 
 	delete thReader;
-	delete socket;
+
 }
 

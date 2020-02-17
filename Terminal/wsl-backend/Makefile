@@ -2,9 +2,9 @@
 CPPFLAGS =
 CXXFLAGS = -g -O2 -Wno-unused-result -std=c++11
 LDFLAGS  = -pthread -s -Wl,-O2
-LDLIBS   = -lsfml-network -lsfml-system -lutil -lm -lstdc++
+LDLIBS   = -lutil -lm -lstdc++
 
-objects = WslBackend.o
+objects = WslBackend.o Connection.o Packet.o
 
 all: wsl-backend
 
