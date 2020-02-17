@@ -8,7 +8,7 @@ using namespace std;
 using namespace sf;
 
 
-WslFrontend::WslFrontend(const string& backendFilename, const string& wslShell, const string& workingDirWsl, int rows, int cols) {
+WslFrontend::WslFrontend(const string& backendFilename, const string& wslShell, const string& workingDirWsl, int rows, int cols, bool useWslExe) {
 
 	TcpListener listener;
 	listener.listen(TcpListener::AnyPort, IpAddress("127.0.0.1"));
@@ -29,7 +29,11 @@ WslFrontend::WslFrontend(const string& backendFilename, const string& wslShell, 
 	ZeroMemory(&pi, sizeof(pi));
 
 	// Start the child process.
-	const char* fmtString = "wsl -e ./%s -- SHELL=%s CHDIR=%s ROWS=%d COLS=%d IP=127.0.0.1 PORT=%d";
+	const char* fmtString;
+	if (useWslExe)
+		fmtString = "wsl -e ./%s -- SHELL=%s CHDIR=%s ROWS=%d COLS=%d IP=127.0.0.1 PORT=%d";
+	else
+		fmtString = "bash -c './%s SHELL=%s CHDIR=%s ROWS=%d COLS=%d IP=127.0.0.1 PORT=%d'";
 	char* commandline = new char[backendFilename.length() + wslShell.length() + workingDirWsl.length() + strlen(fmtString) + 8];
 	sprintf(commandline, fmtString, backendFilename.c_str(), wslShell.c_str(), workingDirWsl.c_str(), rows, cols, (int)port);
 	fprintf(stderr, "WslCommand: %s\n", commandline);
