@@ -40,10 +40,7 @@ Open Terminal.sln and compile the x64 target. By default it links with static VC
 
 Be sure to build a x64 version. (wsl.exe is under Windows/System32 under x64 Windows)
 
-Install SFML network and system modules under WSL, and then enter Terminal/wsl-backend and type "make".
-
-For some unknown reason, compiling with sfml-network-s causes a segment fault when invoking socket().
-Linking with the non-static counterpart does not have the issue.
+Under WSL Shell, chdir to Terminal/wsl-backend and type "make".
 
 ### Linux:
 

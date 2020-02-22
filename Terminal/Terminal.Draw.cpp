@@ -60,8 +60,8 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 
 	if (charTopOffset == -4096) {
 		// Guess the character centering offset
-		// Let's use the upper case 'I' as a reference
-		Glyph g = font.getGlyph('I', charSize, false, 0);
+		// Let's use the pipe character '|' as a reference
+		Glyph g = font.getGlyph('|', charSize, false, 0);
 		charTopOffset = (cellSize.y - g.bounds.height) / 2.0f + (g.bounds.height + g.bounds.top);
 	}
 
@@ -101,17 +101,34 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 			Color fg(cell.fg.rgb.red, cell.fg.rgb.green, cell.fg.rgb.blue);
 			if (cell.attrs.reverse)
 				swap(bg, fg);
+
+			// Draw the cursor
 			if (cursorVisible && curpos.row == i - scrollbackOffset && curpos.col == j) {
-				reverse(bg);
-				reverse(fg);
+				float thick = font.getUnderlineThickness(charSize);
+				switch (cursorShape) {
+				case VTERM_PROP_CURSORSHAPE_BLOCK:
+					reverse(bg);
+					reverse(fg);
+					break;
+				case VTERM_PROP_CURSORSHAPE_BAR_LEFT:
+					pushVertexColor(target, FloatRect(cellRect.left, cellRect.top, thick, cellRect.height), reverseOf(bg));
+					break;
+				case VTERM_PROP_CURSORSHAPE_UNDERLINE:
+					pushVertexColor(target, FloatRect(cellRect.left, cellRect.top + cellRect.height - 1 - thick, cellRect.width, thick), reverseOf(bg));
+					break;
+				}
 			}
 
 			if (bg != Color::Black)
 				pushVertexColor(target, cellRect, bg);
-			if (cell.attrs.underline)
-				pushVertexColor(target, FloatRect(cellRect.left, cellRect.top + cellRect.height - 2, cellRect.width, 1), fg);
-			//if (cell.attrs.strike) // I'm too lazy to somehow get the strikeline position
-				//pushVertexColor(*arr, FloatRect(cellRect.left, roundf(cellRect.top + cellRect.height * 0.6), cellRect.width, 1), reverseOf(col));
+			if (cell.attrs.underline) {
+				float thick = font.getUnderlineThickness(charSize);
+				pushVertexColor(target, FloatRect(cellRect.left, cellRect.top + cellRect.height - 1 - thick, cellRect.width, thick), fg);
+			}
+			if (cell.attrs.strike) { // I'm too lazy to somehow get the strikeline position
+				float thick = font.getUnderlineThickness(charSize);
+				pushVertexColor(target, FloatRect(cellRect.left, roundf(cellRect.top + cellRect.height * 0.6f - thick / 2.0f), cellRect.width, thick), fg);
+			}
 
 			if (cell.chars[0] && cell.chars[0] != ' ') {
 				Glyph glyph = font.getGlyph(cell.chars[0], charSize, hasBold && cell.attrs.bold, 0.0F);

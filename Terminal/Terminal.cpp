@@ -53,6 +53,9 @@ public:
 			term->cursorVisible = val->boolean;
 			term->invalidate();
 			return 1;
+		case VTERM_PROP_CURSORSHAPE:
+			term->cursorShape = val->number;
+			return 1;
 		case VTERM_PROP_MOUSE:
 			term->mouseState = val->number;
 			return 1;

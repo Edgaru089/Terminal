@@ -97,8 +97,11 @@ private:
 
 	// One of VTERM_PROP_MOUSE_NONE, VTERM_PROP_MOUSE_CLICK, VTERM_PROP_MOUSE_DRAG, VTERM_PROP_MOUSE_MOVE
 	// 0 means MOUSE_NONE
-	int mouseState = 0;
+	int mouseState = VTERM_PROP_MOUSE_NONE;
 	bool altScreen = false; // Is the alt-screen enabled?
+	// Shape of the cursor
+	// One of VTERM_PROP_CURSORSHAPE_BLOCK, VTERM_PROP_CURSORSHAPE_BAR_LEFT, VTERM_PROP_CURSORSHAPE_UNDERLINE
+	int cursorShape = VTERM_PROP_CURSORSHAPE_BLOCK;
 
 	std::deque<std::vector<VTermScreenCell>> scrollback;
 
