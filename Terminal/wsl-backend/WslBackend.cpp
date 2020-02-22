@@ -69,8 +69,8 @@ int main(int argc, char* argv[]) {
 	int ret = forkpty(&pty, 0, 0, &ws);
 	if (ret == 0) {
 		chdir(workingDir);
-		//setenv("TERM", "xterm-256color", 1);
-		//setenv("SHELL", shell, 1);
+		setenv("TERM", "xterm-256color", 1);
+		setenv("SHELL", shell, 1);
 		execvp(shell, args.data());
 	} else if (ret == -1) {
 		fprintf(stderr, "WslBackend: forkpty() failed\n");
