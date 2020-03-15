@@ -26,12 +26,7 @@ public:
 public:
 
 	// This function blocks; return value of 0 means failure
-	// Optional; return value of npos means unimplemented
 	virtual size_t read(void* data, size_t maxlen) { return npos; }
-
-	// This function does not block; return value of 0 means empty buffer
-	virtual size_t tryRead(void* data, size_t maxlen) = 0;
-	virtual size_t getBufferedSize() = 0;
 
 	// This function should never block
 	// Return false means failure
@@ -39,6 +34,7 @@ public:
 
 public:
 
+	// This function shouldn't block
 	virtual void resizeTerminal(int rows, int cols) {}
 
 protected:

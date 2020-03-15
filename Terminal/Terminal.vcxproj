@@ -156,7 +156,6 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Main.cpp" />
-    <ClCompile Include="SystemFrontend.cpp" />
     <ClCompile Include="SystemFrontend.Unix.cpp" />
     <ClCompile Include="SystemFrontend.Windows.cpp" />
     <ClCompile Include="Terminal.cpp" />

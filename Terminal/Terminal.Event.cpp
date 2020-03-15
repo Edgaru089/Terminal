@@ -27,6 +27,8 @@ namespace {
 
 void Terminal::processEvent(RenderWindow& win, Event e) {
 
+	lock_guard<mutex> g(vtermLock);
+
 	switch (e.type) {
 	case Event::TextEntered:
 	{
@@ -211,14 +213,6 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 
 
 void Terminal::update() {
-
-	char buffer[4096];
-	size_t readlen;
-
-	while (readlen = frontend->tryRead(buffer, sizeof(buffer))) {
-		vterm_input_write(term, buffer, readlen);
-	}
-
 	if (!frontend->isRunning()) {
 		fprintf(stderr, "Terminal::update(): frontend session ended\n");
 		running = false;

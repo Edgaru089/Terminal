@@ -22,17 +22,12 @@ SystemFrontend::SystemFrontend(const string& shell, int rows, int cols) {
 	}
 
 	thReader = new thread(
-		[&]() {
-			char buffer[4096];
-			ssize_t readlen;
-			while (running && (readlen = ::read(pty, buffer, sizeof(buffer))) >= 0) {
-				bufReadLock.lock();
-				bufRead.insert(bufRead.end(), buffer, buffer + readlen);
-				bufReadLock.unlock();
-			}
+		[](int child, atomic_bool& running) {
+			int stat;
+			waitpid(child, &stat, 0);
 			running = false;
 		}
-	);
+	, child, ref(running));
 
 	running = true;
 }
@@ -49,6 +44,15 @@ SystemFrontend::~SystemFrontend() {
 			thReader->join();
 		delete thReader;
 	}
+}
+
+
+size_t SystemFrontend::read(void* data, size_t len) {
+	ssize_t ret = ::read(pty, data, len);
+	if (ret == -1)
+		return 0;
+	else
+		return ret;
 }
 
 

@@ -125,6 +125,14 @@ SystemFrontend::~SystemFrontend() {
 }
 
 
+size_t SystemFrontend::read(void* data, size_t len) {
+	DWORD readlen;
+	if (!ReadFile(childStdOutPipeRead, data, len, &readlen, NULL))
+		return 0;
+	return readlen;
+}
+
+
 bool SystemFrontend::write(const void* data, size_t len) {
 	DWORD size;
 	return WriteFile(childStdInPipeWrite, data, len, &size, NULL);

@@ -94,18 +94,6 @@ WslFrontend::WslFrontend(const string& backendFilename, const string& wslShell, 
 		ERROR_EXIT("Listener Timeout");
 	socket->setBlocking(true);
 
-	thReader = new thread(
-		[&]() {
-			Packet pack;
-			while (running && socket->receive(pack) == Socket::Done) {
-				processPacket(pack);
-				pack.clear();
-			}
-			fprintf(stderr, "WslFrontend::thReader: Exited\n");
-			running = false;
-		}
-	);
-
 	running = true;
 
 #undef ERROR_EXIT
@@ -131,11 +119,6 @@ WslFrontend::~WslFrontend() {
 	}
 	CloseHandle(childProcessHandle);
 
-	if (thReader) {
-		if (thReader->joinable())
-			thReader->join();
-		delete thReader;
-	}
 	if (processRunningChecker) {
 		if (processRunningChecker->joinable())
 			processRunningChecker->join();
@@ -144,37 +127,55 @@ WslFrontend::~WslFrontend() {
 }
 
 
-size_t WslFrontend::tryRead(void* data, size_t maxlen) {
-	lock_guard<mutex> lock(bufReadLock);
+size_t WslFrontend::read(void* data, size_t len) {
+	static vector<char> buffer;
+	static Packet p;
 
-	if (bufRead.size() >= maxlen) {
-		auto it = bufRead.begin();
-		for (int i = 0; i < maxlen; i++) {
-			((char*)data)[i] = *it;
-			it++;
-		}
-		bufRead.erase(bufRead.begin(), it);
-		return maxlen;
-	} else if (bufRead.empty())
-		return 0;
-	else {
-		auto it = bufRead.begin();
-		size_t ans = bufRead.size();
-		for (int i = 0; i < ans; i++) {
-			((char*)data)[i] = *it;
-			it++;
-		}
-		bufRead.clear();
-		return ans;
+	if (!buffer.empty()) {
+		size_t readlen = min(len, buffer.size());
+		memcpy(data, buffer.data(), readlen);
+		buffer.erase(buffer.begin(), buffer.begin() + readlen);
+		return readlen;
 	}
-}
 
+	for (;;) {
+		Socket::Status status;
+		if ((status = socket->receive(p)) != Socket::Done) {
+			fprintf(stderr, "WslFrontend::read(): Socket read failed, status=%d\n", (int)status);
+			running = false;
+			return 0;
+		}
 
-size_t WslFrontend::getBufferedSize() {
-	bufReadLock.lock();
-	size_t ans = bufRead.size();
-	bufReadLock.unlock();
-	return ans;
+		Uint8 opcode = 255;
+		p >> opcode;
+		switch (opcode) {
+		case OPCODE_STRING:
+		{
+			const char* pd = reinterpret_cast<const char*>(p.getData()) + sizeof(Uint8) + sizeof(Uint32);
+			size_t plen = p.getDataSize() - sizeof(Uint8) - sizeof(Uint32);
+
+			if (plen <= len) {
+				memcpy(data, pd, plen);
+				return plen;
+			} else {
+				memcpy(data, pd, len);
+				buffer.insert(buffer.end(), pd + len, pd + plen);
+				return len;
+			}
+
+			break;
+		}
+		case OPCODE_RESIZE:
+			break; // Ignoring
+		case OPCODE_STOP:
+			socket->disconnect();
+			running = false;
+			break;
+		default:
+			fprintf(stderr, "WslFrontend::ProcessPacket: Warning: Unknown OpCode %d\n", (int)opcode);
+		}
+	}
+
 }
 
 
@@ -202,28 +203,6 @@ void WslFrontend::resizeTerminal(int rows, int cols) {
 	socket->send(pack);
 }
 
-
-void WslFrontend::processPacket(Packet& p) {
-	Uint8 opcode = 255;
-	p >> opcode;
-	switch (opcode) {
-	case OPCODE_STRING:
-	{
-		bufReadLock.lock();
-		bufRead.insert(bufRead.end(), reinterpret_cast<const char*>(p.getData()) + sizeof(Uint8) + sizeof(Uint32), reinterpret_cast<const char*>(p.getData()) + p.getDataSize());
-		bufReadLock.unlock();
-		break;
-	}
-	case OPCODE_RESIZE:
-		break; // Ignoring
-	case OPCODE_STOP:
-		socket->disconnect();
-		running = false;
-		break;
-	default:
-		fprintf(stderr, "WslFrontend::ProcessPacket: Warning: Unknown OpCode %d\n", (int)opcode);
-	}
-}
 
 #endif
 

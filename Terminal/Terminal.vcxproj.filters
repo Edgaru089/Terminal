@@ -63,9 +63,6 @@
     <ClCompile Include="Terminal.Event.cpp">
       <Filter>Terminal</Filter>
     </ClCompile>
-    <ClCompile Include="SystemFrontend.cpp">
-      <Filter>Frontend</Filter>
-    </ClCompile>
     <ClCompile Include="SystemFrontend.Windows.cpp">
       <Filter>Frontend</Filter>
     </ClCompile>

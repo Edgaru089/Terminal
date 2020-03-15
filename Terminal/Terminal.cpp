@@ -116,7 +116,8 @@ public:
 
 	static void writeCall(const char* s, size_t len, void* data) {
 		Terminal* term = reinterpret_cast<Terminal*>(data);
-		term->frontend->write(s, len);
+		lock_guard<mutex> g(term->vtermOutputBufferLock);
+		term->vtermOutputBuffer.insert(term->vtermOutputBuffer.end(), s, s + len);
 	}
 };
 
@@ -159,6 +160,22 @@ Terminal::Terminal(
 	vterm_output_set_callback(term, &TermCb::writeCall, reinterpret_cast<void*>(this));
 	vterm_set_size(term, rows, cols);
 
+	thReader = new thread(
+		[this] {
+			size_t readlen;
+			char buffer[65536];
+			while (running && (readlen = this->frontend->read(buffer, sizeof(buffer)))) {
+				vtermLock.lock();
+				vterm_input_write(term, buffer, readlen);
+				vtermLock.unlock();
+			}
+			fprintf(stderr, "Terminal::thReader: Frontend->read returned 0, Stopping\n");
+			running = false;
+		}
+	);
+
+	thRedrawer = new thread(&Terminal::thRedrawerFunction, this);
+
 	// Looks like there's no much to do about the frontend instance
 }
 
@@ -170,6 +187,14 @@ Terminal::~Terminal() {
 	vterm_free(term);
 	if (screencb)
 		delete screencb;
+
+	if (thReader && thReader->joinable())
+		thReader->join();
+
+	if (thRedrawer && thRedrawer->joinable()) {
+		redrawConditional.notify_all();
+		thRedrawer->join();
+	}
 }
 
 
@@ -181,6 +206,13 @@ void Terminal::stop() {
 
 
 void Terminal::invalidate() {
-	needRedraw = true;
+	redrawConditional.notify_one();
+}
+
+
+void Terminal::flushVtermOutputBuffer() {
+	lock_guard<mutex> g(vtermOutputBufferLock);
+	frontend->write(vtermOutputBuffer.data(), vtermOutputBuffer.size());
+	vtermOutputBuffer.clear();
 }
 

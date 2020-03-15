@@ -94,7 +94,7 @@ int main(int argc, char* argv[]) {
 	thReader = new thread(
 		[&]() {
 			Packet pack;
-			char buffer[4096];
+			char buffer[65536];
 			ssize_t readlen;
 			while (running && (readlen = ::read(pty, buffer, sizeof(buffer))) >= 0) {
 				pack.clear();

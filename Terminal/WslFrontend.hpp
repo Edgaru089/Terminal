@@ -22,8 +22,7 @@ public:
 
 public:
 
-	virtual size_t tryRead(void* data, size_t maxlen) override;
-	virtual size_t getBufferedSize() override;
+	virtual size_t read(void* data, size_t len) override;
 
 	virtual bool write(const void* data, size_t len) override;
 
@@ -33,11 +32,8 @@ public:
 
 private:
 
-	void processPacket(sf::Packet& p);
-
 	std::deque<char> bufRead;
 	std::mutex bufReadLock;
-	std::thread* thReader = 0;
 
 	std::thread* processRunningChecker = 0;
 	HANDLE childProcessHandle = 0;

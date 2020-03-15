@@ -43,20 +43,13 @@ namespace {
 			Vertex(Vector2f(rect.left, rect.top + rect.height), color, Vector2f(texRect.left, texRect.top + texRect.height)),
 			Vertex(Vector2f(rect.left + rect.width, rect.top + rect.height), color, Vector2f(texRect.left + texRect.width, texRect.top + texRect.height)));
 	}
+
+	VertexBuffer* buf;
+	vector<Vertex> arr;
 }
 
 
-bool Terminal::redrawIfRequired(Font& font, vector<Vertex>& target, Color bgColor) {
-	if (needRedraw) {
-		needRedraw = false;
-		forceRedraw(font, target, bgColor);
-		return true;
-	} else
-		return false;
-}
-
-
-void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
+void Terminal::redraw(Font& font, vector<Vertex>& target, Color bgColor) {
 
 	if (charTopOffset == -4096) {
 		// Guess the character centering offset
@@ -144,5 +137,40 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 
 			j += cell.width - 1;
 		}
+}
+
+
+void Terminal::thRedrawerFunction() {
+	buf = new VertexBuffer(PrimitiveType::Triangles, VertexBuffer::Dynamic);
+
+	unique_lock<mutex> lock(vtermLock);
+
+	for (;;) {
+
+		update();
+		if (!running)
+			break;
+
+		if (cbRedrawPre)
+			cbRedrawPre();
+
+		redraw(*drawFont, arr, Color(0, 0, 0, drawBgDarkness));
+
+		if (drawUseVertexBufferObject) {
+			if (buf->getVertexCount() < arr.size())
+				buf->create(max((size_t)(cols * rows * (size_t)4), arr.size()));
+			buf->update(arr.data(), arr.size(), 0);
+			drawRenderTarget->draw(*buf, 0, arr.size(), &drawFont->getTexture(charSize));
+		} else
+			drawRenderTarget->draw(arr.data(), arr.size(), PrimitiveType::Triangles, &drawFont->getTexture(charSize));
+
+		if (cbRedrawPost)
+			cbRedrawPost();
+
+		redrawConditional.wait(lock);
+	}
+	lock.unlock();
+
+	delete buf;
 }
 

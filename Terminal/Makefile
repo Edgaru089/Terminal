@@ -7,7 +7,7 @@ LDFLAGS  = -s -Wl,-O2
 LDLIBS   = -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lpthread -lGL -lGLU -lX11 -lXrandr -ludev -lfreetype -lutil -lm -lstdc++
 
 objects       = Main.o Terminal.o Terminal.Draw.o Terminal.Event.o \
-				SystemFrontend.o SystemFrontend.Windows.o SystemFrontend.Unix.o
+				SystemFrontend.Windows.o SystemFrontend.Unix.o
 objects_vterm = encoding.o keyboard.o mouse.o parser.o pen.o screen.o state.o unicode.o vterm.o
 
 all: Terminal

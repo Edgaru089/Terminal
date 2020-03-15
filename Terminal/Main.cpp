@@ -122,18 +122,13 @@ int main(int argc, char* argv[]) {
 
 	if (fullscreen) {
 		win->setPosition(Vector2i(0, 0));
-		win->setMouseCursorVisible(false);
+		//win->setMouseCursorVisible(false);
 	}
 	win->setKeyRepeatEnabled(true);
 	win->setVerticalSyncEnabled(true);
 	//win->setFramerateLimit(60);
 
-	VertexBuffer buf(PrimitiveType::Triangles, VertexBuffer::Dynamic);
-	if (useVbo)
-		buf.create((size_t)2 * rows * cols * 4);
-	VertexArray arrtop;
-	arrtop.setPrimitiveType(PrimitiveType::Triangles);
-	vector<Vertex> arr;
+	win->setActive(false);
 
 #ifdef SFML_SYSTEM_WINDOWS
 	bool useWsl = option.get("use_wsl_frontend") == "true";
@@ -146,79 +141,56 @@ int main(int argc, char* argv[]) {
 	term = new Terminal(new SystemFrontend(option.get("shell"), rows, cols), rows, cols, cellSize, charSize, useBold, scrollMaxLines);
 #endif
 	term->cbSetWindowSize = [&](int width, int height) {
-		win->setSize(Vector2u(width, height));
-		win->setView(View(FloatRect(0, 0, width, height)));
+		//win->setSize(Vector2u(width, height));
+		//win->setView(View(FloatRect(0, 0, width, height)));
 	};
 	term->cbSetWindowTitle = [&](const string& title) {
-		win->setTitle(String::fromUtf8(title.begin(), title.end()));
+		//win->setTitle(String::fromUtf8(title.begin(), title.end()));
 	};
+
+	term->cbRedrawPre = [&]() {
+		win->clear();
+
+		if (bgDarkness != 255)
+			win->draw(bgSprite);
+	};
+
+	term->cbRedrawPost = [&]() {
+		win->display();
+	};
+
+	term->drawBgDarkness = bgDarkness;
+	term->drawFont = &font;
+	term->drawRenderTarget = win;
+	term->drawUseVertexBufferObject = useVbo;
 
 	term->invalidate();
 
-	while (win->isOpen()) {
+	Event e;
+	while (win->waitEvent(e)) {
+		if (e.type == Event::Closed)
+			win->close();
+		else if (e.type == Event::Resized) {
+			win->setView(View(FloatRect(0, 0, e.size.width, e.size.height)));
 
-		term->update();
-
-		bool redrawn;
-		if ((redrawn = term->redrawIfRequired(font, arr, bgDarkness == 255 ? Color::Black : Color(0, 0, 0, bgDarkness))) || fullscreen) {
-			win->clear();
-
-			if (bgDarkness != 255)
-				win->draw(bgSprite);
-
-			if (useVbo) {
-				if (redrawn)
-					buf.update(arr.data(), arr.size(), 0);
-				win->draw(buf, 0, arr.size(), &font.getTexture(charSize));
-			} else
-				win->draw(arr.data(), arr.size(), PrimitiveType::Triangles, &font.getTexture(charSize));
-
-			if (fullscreen) {
-				arrtop.clear();
-				const Vector2f pos(Mouse::getPosition(*win));
-				const float sqrt2 = 1.414213562f;
-				const Vector2f off1(0, 16), off2(8 * sqrt2, 8 * sqrt2);
-				arrtop.append(Vertex(pos, Color::White));
-				arrtop.append(Vertex(pos + off1, Color::White));
-				arrtop.append(Vertex(pos + Vector2f(8, 8), Color::White));
-				arrtop.append(Vertex(pos, Color::White));
-				arrtop.append(Vertex(pos + off2, Color::White));
-				arrtop.append(Vertex(pos + Vector2f(0, 8 * sqrt2), Color::White));
-				win->draw(arrtop);
+			if (e.size.width / cellSize.x != cols || e.size.height / cellSize.y != rows) {
+				cols = e.size.width / cellSize.x;
+				rows = e.size.height / cellSize.y;
 			}
 
-			win->display();
-
+			bgSprite = coverAutoscale(bgTexture, Vector2f(e.size.width, e.size.height));
 		}
-
-		Event e;
-		e.type = Event::Count;
-		while (win->pollEvent(e)) {
-			if (e.type == Event::Closed)
-				win->close();
-			else if (e.type == Event::Resized) {
-				win->setView(View(FloatRect(0, 0, e.size.width, e.size.height)));
-
-				if (e.size.width / cellSize.x != cols || e.size.height / cellSize.y != rows) {
-					cols = e.size.width / cellSize.x;
-					rows = e.size.height / cellSize.y;
-					buf.create((size_t)2 * rows * cols * 4);
-				}
-
-				bgSprite = coverAutoscale(bgTexture, Vector2f(e.size.width, e.size.height));
-			}
-			term->processEvent(*win, e);
-		}
+		term->processEvent(*win, e);
+		term->flushVtermOutputBuffer();
 
 		if (!term->isRunning())
 			win->close();
 
-		if (!(redrawn || fullscreen))
-			sleep(microseconds(2000));
+		e.type = Event::Count;
 	}
 
-	delete win;
 	delete term;
+	delete win;
 
 	return 0;
 }

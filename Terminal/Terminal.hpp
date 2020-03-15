@@ -7,6 +7,7 @@
 #include <functional>
 #include <vector>
 #include <deque>
+#include <condition_variable>
 
 #include <SFML/Graphics.hpp>
 
@@ -40,16 +41,15 @@ public:
 	// Invalidates the whole screen
 	void invalidate();
 
-	// Returns true if redrawed, false otherwise
-	bool redrawIfRequired(sf::Font& font, std::vector<sf::Vertex>& target, sf::Color bgColor = sf::Color::Black);
-	// Forces a redraw
-	void forceRedraw(sf::Font& font, std::vector<sf::Vertex>& target, sf::Color bgColor = sf::Color::Black);
+	void redraw(sf::Font& font, std::vector<sf::Vertex>& target, sf::Color bgColor = sf::Color::Black);
 
 public:
 
 	void processEvent(sf::RenderWindow& win, sf::Event event);
 
 	void update();
+
+	void flushVtermOutputBuffer();
 
 public:
 
@@ -67,7 +67,21 @@ public:
 	std::function<void(std::string)> cbSetWindowTitle;
 	std::function<void(int width, int height)> cbSetWindowSize;
 
+	// This function must call clear() if required
+	std::function<void()> cbRedrawPre;
+	// This function must call display() (if there is one)
+	std::function<void()> cbRedrawPost;
+
+public:
+
+	sf::Font* drawFont;
+	sf::Uint8 drawBgDarkness;
+	sf::RenderTarget* drawRenderTarget;
+	bool drawUseVertexBufferObject;
+
 private:
+
+	void thRedrawerFunction();
 
 	std::string lastError;
 
@@ -85,13 +99,18 @@ private:
 
 	sf::Vector2i lastMouseCell;
 
-	bool needRedraw;
+	std::thread* thReader, * thRedrawer;
+	std::condition_variable redrawConditional;
+	std::mutex vtermLock;
 
 	std::string winTitle;
 
 	VTerm* term;
 	VTermScreen* screen;
 	VTermState* state;
+
+	std::vector<char> vtermOutputBuffer;
+	std::mutex vtermOutputBufferLock;
 
 	VTermScreenCallbacks* screencb = nullptr;
 
