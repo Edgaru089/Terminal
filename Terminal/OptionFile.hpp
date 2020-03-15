@@ -29,7 +29,7 @@ public:
 		return true;
 	}
 
-	const std::string& getContent(std::string key) {
+	const std::string& get(std::string key) {
 		std::map<std::string, std::string>::iterator i;
 		if ((i = this->data.find(key)) != this->data.end()) {
 			return i->second;

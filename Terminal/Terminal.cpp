@@ -107,7 +107,7 @@ public:
 
 	static int termPushLine(int col, const VTermScreenCell* data, void* user) {
 		Terminal* term = reinterpret_cast<Terminal*>(user);
-		term->scrollback.emplace_back(vector<VTermScreenCell>(data, data + col));
+		term->scrollback.emplace_back(data, data + col);
 		while (term->scrollback.size() > term->scrollbackMaxLength)
 			term->scrollback.pop_front();
 		term->invalidate();

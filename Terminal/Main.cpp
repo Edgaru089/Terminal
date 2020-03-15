@@ -64,30 +64,30 @@ int main(int argc, char* argv[]) {
 
 	option.loadFromFile("Terminal.ini");
 	int rows, cols;
-	Vector2i cellSize = Vector2i(atoi(option.getContent("cell_width").c_str()), atoi(option.getContent("cell_height").c_str()));
-	int charSize = atoi(option.getContent("fontsize").c_str());
-	bool useBold = option.getContent("use_bold") == "true";
+	Vector2i cellSize = Vector2i(atoi(option.get("cell_width").c_str()), atoi(option.get("cell_height").c_str()));
+	int charSize = atoi(option.get("fontsize").c_str());
+	bool useBold = option.get("use_bold") == "true";
 	VideoMode mode;
 	bool fullscreen = (argc > 1 && strcmp(argv[1], "--fullscreen") == 0);
 	if (fullscreen) {
 		mode = VideoMode::getDesktopMode();
 		cols = mode.width / cellSize.x;
 		rows = mode.height / cellSize.y;
-		const string& rc = option.getContent("run_on_startup");
+		const string& rc = option.get("run_on_startup");
 		if (!rc.empty())
 			system(rc.c_str());
 	} else {
-		rows = atoi(option.getContent("rows").c_str());
-		cols = atoi(option.getContent("cols").c_str());
+		rows = atoi(option.get("rows").c_str());
+		cols = atoi(option.get("cols").c_str());
 		mode = VideoMode(cols * cellSize.x, rows * cellSize.y);
 	}
-	string bgFilename = option.getContent("background_image");
-	Uint8 bgDarkness = atoi(option.getContent("bg_darkness").c_str());
+	string bgFilename = option.get("background_image");
+	Uint8 bgDarkness = atoi(option.get("bg_darkness").c_str());
 	Texture bgTexture;
 	Sprite bgSprite;
 	bool useVbo = VertexBuffer::isAvailable();
-	int scrollMaxLines = atoi(option.getContent("scrollback_max_lines").c_str());
-	bool useWslExe = option.getContent("use_wsl_exe") == "true";
+	int scrollMaxLines = atoi(option.get("scrollback_max_lines").c_str());
+	bool useWslExe = option.get("use_wsl_exe") == "true";
 
 	if (!bgFilename.empty()) {
 		if (!bgTexture.loadFromFile(bgFilename))
@@ -104,10 +104,10 @@ int main(int argc, char* argv[]) {
 	Font font;
 #ifdef SFML_SYSTEM_WINDOWS
 	//font.loadFromFile("C:\\Windows\\Fonts\\ConsolasDengXianSemiBold.ttf");
-	font.loadFromFile("C:\\Windows\\Fonts\\" + option.getContent("font"));
+	font.loadFromFile("C:\\Windows\\Fonts\\" + option.get("font"));
 #else
 	//font.loadFromFile("/mnt/c/Windows/Fonts/ConsolasDengXianSemiBold.ttf");
-	if (!font.loadFromFile("/usr/share/fonts/" + option.getContent("font")))
+	if (!font.loadFromFile("/usr/share/fonts/" + option.get("font")))
 		if (!font.loadFromFile("/mnt/Windows/Windows/Fonts/ConsolasDengXianSemiBold.ttf"))
 			if (!font.loadFromFile("/mnt/c/Windows/Fonts/ConsolasDengXianSemiBold.ttf"))
 				font.loadFromFile("/usr/share/fonts/truetype/unifont/unifont.ttf");
@@ -136,14 +136,14 @@ int main(int argc, char* argv[]) {
 	vector<Vertex> arr;
 
 #ifdef SFML_SYSTEM_WINDOWS
-	bool useWsl = option.getContent("use_wsl_frontend") == "true";
+	bool useWsl = option.get("use_wsl_frontend") == "true";
 	if (useWsl)
-		term = new Terminal(new WslFrontend(option.getContent("wsl_backend_file"), option.getContent("shell"), option.getContent("wsl_working_dir"), rows, cols, useWslExe),
+		term = new Terminal(new WslFrontend(option.get("wsl_backend_file"), option.get("shell"), option.get("wsl_working_dir"), rows, cols, useWslExe),
 			rows, cols, cellSize, charSize, useBold, scrollMaxLines);
 	else
-		term = new Terminal(new SystemFrontend(option.getContent("shell"), rows, cols), rows, cols, cellSize, charSize, useBold, scrollMaxLines);
+		term = new Terminal(new SystemFrontend(option.get("shell"), rows, cols), rows, cols, cellSize, charSize, useBold, scrollMaxLines);
 #else
-	term = new Terminal(new SystemFrontend(option.getContent("shell"), rows, cols), rows, cols, cellSize, charSize, useBold, scrollMaxLines);
+	term = new Terminal(new SystemFrontend(option.get("shell"), rows, cols), rows, cols, cellSize, charSize, useBold, scrollMaxLines);
 #endif
 	term->cbSetWindowSize = [&](int width, int height) {
 		win->setSize(Vector2u(width, height));
@@ -153,29 +153,10 @@ int main(int argc, char* argv[]) {
 		win->setTitle(String::fromUtf8(title.begin(), title.end()));
 	};
 
+	term->invalidate();
+
 	while (win->isOpen()) {
 
-		Event e;
-		e.type = Event::Count;
-		while (win->pollEvent(e)) {
-			if (e.type == Event::Closed)
-				win->close();
-			else if (e.type == Event::Resized) {
-				win->setView(View(FloatRect(0, 0, e.size.width, e.size.height)));
-
-				if (e.size.width / cellSize.x != cols || e.size.height / cellSize.y != rows) {
-					cols = e.size.width / cellSize.x;
-					rows = e.size.height / cellSize.y;
-					buf.create((size_t)2 * rows * cols * 4);
-				}
-
-				bgSprite = coverAutoscale(bgTexture, Vector2f(e.size.width, e.size.height));
-			}
-			term->processEvent(*win, e);
-		}
-
-		//		if (e.type != Event::Count)
-		//			sleep(microseconds(500));
 		term->update();
 
 		bool redrawn;
@@ -208,12 +189,32 @@ int main(int argc, char* argv[]) {
 
 			win->display();
 
-		} else {
-			sleep(microseconds(2000));
+		}
+
+		Event e;
+		e.type = Event::Count;
+		while (win->pollEvent(e)) {
+			if (e.type == Event::Closed)
+				win->close();
+			else if (e.type == Event::Resized) {
+				win->setView(View(FloatRect(0, 0, e.size.width, e.size.height)));
+
+				if (e.size.width / cellSize.x != cols || e.size.height / cellSize.y != rows) {
+					cols = e.size.width / cellSize.x;
+					rows = e.size.height / cellSize.y;
+					buf.create((size_t)2 * rows * cols * 4);
+				}
+
+				bgSprite = coverAutoscale(bgTexture, Vector2f(e.size.width, e.size.height));
+			}
+			term->processEvent(*win, e);
 		}
 
 		if (!term->isRunning())
 			win->close();
+
+		if (!(redrawn || fullscreen))
+			sleep(microseconds(2000));
 	}
 
 	delete win;

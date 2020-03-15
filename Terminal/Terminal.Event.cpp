@@ -33,9 +33,27 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 		VTermModifier mod = getModifier();
 		if (e.text.unicode <= 31 && mod & VTERM_MOD_CTRL) {
 			// Control characters produced by <CTRL-x> keystrokes
-			e.text.unicode += 'A' - 1;
-			if (!(mod & VTERM_MOD_SHIFT) && isalpha((int)e.text.unicode))
-				e.text.unicode += 'a' - 'A';
+			switch (e.text.unicode) {
+				// These keys have speical meaning:
+			case 0x08: //  BS (Ctrl-H) Backspace
+			case 0x09: //  HT (Ctrl-I) Tab
+			case 0x0A: //  LF (Ctrl-J) Line feed
+			case 0x0D: //  CR (Ctrl-M) Return
+			case 0x1B: // ESC (Ctrl-[) Escape
+				// Let's cancel out the Ctrl modifier
+				mod = VTermModifier(mod & (~VTERM_MOD_CTRL));
+				break;
+			default:
+				e.text.unicode += 'A' - 1;
+				if (!(mod & VTERM_MOD_SHIFT) && isalpha((int)e.text.unicode))
+					e.text.unicode += 'a' - 'A';
+			}
+		}
+
+		if (e.text.unicode == 127) {
+			// Under X11, the Delete key would trigger a 0x7f text event
+			// Let's ignore it
+			break;
 		}
 
 		if (e.text.unicode == 'V' && (mod & VTERM_MOD_CTRL)) {
@@ -49,12 +67,12 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 				vterm_keyboard_unichar(term, c, VTermModifier(0));
 			}
 			vterm_keyboard_end_paste(term);
-			return;
+			break;
 		}
 
 		fprintf(stderr, "Main: Event::TextEntered, keycode=%d(%c), Ctrl:%s, Shift:%s, Alt:%s\n", (int)e.text.unicode, (char)e.text.unicode,
 			(mod & VTERM_MOD_CTRL) ? "Yes" : "No", (mod & VTERM_MOD_SHIFT) ? "Yes" : "No", (mod & VTERM_MOD_ALT) ? "Yes" : "No");
-		vterm_keyboard_unichar(term, e.text.unicode, getModifier());
+		vterm_keyboard_unichar(term, e.text.unicode, mod);
 
 		// Let's also reset the scrollback position
 		if (!altScreen) {
@@ -149,10 +167,8 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 			key = VTERM_KEY_PAGEUP; break;
 		case Keyboard::PageDown:
 			key = VTERM_KEY_PAGEDOWN; break;
-#ifdef SFML_SYSTEM_WINDOWS
 		case Keyboard::Delete:
 			key = VTERM_KEY_DEL; break;
-#endif
 		}
 		if (e.key.code >= Keyboard::F1 && e.key.code <= Keyboard::F15)
 			key = (VTermKey)(VTERM_KEY_FUNCTION((int)e.key.code - Keyboard::F1 + 1));

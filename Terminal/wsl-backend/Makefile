@@ -9,7 +9,7 @@ objects = WslBackend.o Connection.o Packet.o
 all: wsl-backend
 
 wsl-backend: $(objects)
-	cc -o wsl-backend $(objects) $(LDFLAGS) $(LDLIBS)
+	$(CC) -o wsl-backend $(objects) $(LDFLAGS) $(LDLIBS)
 
 clean:
 	rm -f *.o wsl-backend
