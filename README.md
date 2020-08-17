@@ -32,7 +32,7 @@ Prerequisites: SFML (Tested with 2.5.1) and a C++11-compliant compiler (Tested w
 ### Windows with Visual Studio:
 
 Install x64 SFML under C:\Non-System\Libraries64 (the default).
-Be sure to build a static version and check SFML_USE_STATIC_STD_LIBS to link with static VC++.
+Be sure to build a static version and check SFML\_USE\_STATIC\_STD\_LIBS to link with static VC++.
 
 Open Terminal.sln and compile the x64 target. By default it links with static VC++ and static SFML.
 
@@ -44,10 +44,10 @@ Under WSL Shell, chdir to Terminal/wsl-backend and type "make".
 
 ### Linux:
 
-Install SFML graphics, window and system modules. You'll also need the development packages of:
+Install SFML graphics, window and system modules (```libsfml-dev``` on Debian/Ubuntu). You'll also need the development packages of:
 
 ```
 GL GLU X11 Xrandr udev freetype
 ```
 
-Enter the folder "Terminal" and type "make". This links with static SFML.
+Enter the folder "Terminal" and type "make". This links with dynamic SFML.

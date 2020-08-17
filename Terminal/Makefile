@@ -1,10 +1,10 @@
 VPATH = vterm
 
-CPPFLAGS = -DSFML_STATIC
+CPPFLAGS =
 CFLAGS   = -O2
 CXXFLAGS = -O2 -Wno-unused-result -std=c++11
 LDFLAGS  = -s -Wl,-O2
-LDLIBS   = -lsfml-graphics-s -lsfml-window-s -lsfml-system-s -lpthread -lGL -lGLU -lX11 -lXrandr -ludev -lfreetype -lutil -lm -lstdc++
+LDLIBS   = -lsfml-graphics -lsfml-window -lsfml-system -lpthread -lGL -lGLU -lX11 -lXrandr -ludev -lfreetype -lutil -lm -lstdc++
 
 objects       = Main.o Terminal.o Terminal.Draw.o Terminal.Event.o \
 				SystemFrontend.o SystemFrontend.Windows.o SystemFrontend.Unix.o
