@@ -137,6 +137,7 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 	}
 	case Event::KeyPressed:
 	{
+		VTermModifier mod = getModifier();
 		VTermKey key = VTERM_KEY_NONE;
 		switch (e.key.code) {
 			//case Keyboard::Enter:
@@ -169,11 +170,18 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 			key = VTERM_KEY_PAGEDOWN; break;
 		case Keyboard::Delete:
 			key = VTERM_KEY_DEL; break;
+#ifdef SFML_SYSTEM_LINUX
+		case Keyboard::Space:
+			// Ctrl-Space does not fire a NUL text input under X, we have to add it
+			if (mod & VTERM_MOD_CTRL)
+				vterm_keyboard_unichar(term, ' ', mod);
+			break;
+#endif
 		}
 		if (e.key.code >= Keyboard::F1 && e.key.code <= Keyboard::F15)
 			key = (VTermKey)(VTERM_KEY_FUNCTION((int)e.key.code - Keyboard::F1 + 1));
 		if (key != VTERM_KEY_NONE)
-			vterm_keyboard_key(term, key, getModifier());
+			vterm_keyboard_key(term, key, mod);
 
 		// Let's also reset the scrollback position
 		if (!altScreen) {
