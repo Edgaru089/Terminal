@@ -63,6 +63,12 @@ public:
 
 public:
 
+	void lock() { vtermLock.lock(); }
+	void unlock() { vtermLock.unlock(); }
+	bool try_lock() { return vtermLock.try_lock(); }
+
+public:
+
 	std::function<void()> bell;
 	std::function<void(std::string)> cbSetWindowTitle;
 	std::function<void(int width, int height)> cbSetWindowSize;

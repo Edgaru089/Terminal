@@ -63,8 +63,7 @@ void Terminal::redraw(Font& font, vector<Vertex>& target, Color bgColor) {
 		pushVertexColor(target, FloatRect(0, 0, (cols + 1) * cellSize.x, (rows + 1) * cellSize.y), bgColor);
 
 	VTermPos curpos;
-	VTermScreen* scr = vterm_obtain_screen(term);
-	vterm_state_get_cursorpos(vterm_obtain_state(term), &curpos);
+	vterm_state_get_cursorpos(state, &curpos);
 
 	for (int i = 0; i < rows; i++)
 		for (int j = 0; j < cols; j++) {
@@ -72,7 +71,7 @@ void Terminal::redraw(Font& font, vector<Vertex>& target, Color bgColor) {
 			VTermScreenCell cell;
 
 			if (altScreen) {
-				if (!vterm_screen_get_cell(scr, VTermPos{ i, j }, &cell))
+				if (!vterm_screen_get_cell(screen, VTermPos{ i, j }, &cell))
 					continue;
 			} else {
 				if (i < scrollbackOffset) {
@@ -81,12 +80,12 @@ void Terminal::redraw(Font& font, vector<Vertex>& target, Color bgColor) {
 						cell = line[j];
 					else
 						continue;
-				} else if (!vterm_screen_get_cell(scr, VTermPos{ i - scrollbackOffset, j }, &cell))
+				} else if (!vterm_screen_get_cell(screen, VTermPos{ i - scrollbackOffset, j }, &cell))
 					continue;
 			}
 
-			vterm_state_convert_color_to_rgb(vterm_obtain_state(term), &cell.fg);
-			vterm_state_convert_color_to_rgb(vterm_obtain_state(term), &cell.bg);
+			vterm_state_convert_color_to_rgb(state, &cell.fg);
+			vterm_state_convert_color_to_rgb(state, &cell.bg);
 
 			FloatRect cellRect(j * cellSize.x, i * cellSize.y, cellSize.x * cell.width, cellSize.y);
 
@@ -104,10 +103,10 @@ void Terminal::redraw(Font& font, vector<Vertex>& target, Color bgColor) {
 					reverse(fg);
 					break;
 				case VTERM_PROP_CURSORSHAPE_BAR_LEFT:
-					pushVertexColor(target, FloatRect(cellRect.left, cellRect.top, thick, cellRect.height), reverseOf(bg));
+					pushVertexColor(target, FloatRect(cellRect.left, cellRect.top, thick * 2.0f, cellRect.height), reverseOf(bg));
 					break;
 				case VTERM_PROP_CURSORSHAPE_UNDERLINE:
-					pushVertexColor(target, FloatRect(cellRect.left, cellRect.top + cellRect.height - 1 - thick, cellRect.width, thick), reverseOf(bg));
+					pushVertexColor(target, FloatRect(cellRect.left, cellRect.top + cellRect.height - thick * 2.0f, cellRect.width, thick * 2.0f), reverseOf(bg));
 					break;
 				}
 			}
@@ -141,11 +140,14 @@ void Terminal::redraw(Font& font, vector<Vertex>& target, Color bgColor) {
 
 
 void Terminal::thRedrawerFunction() {
-	buf = new VertexBuffer(PrimitiveType::Triangles, VertexBuffer::Dynamic);
+
+	if (drawUseVertexBufferObject)
+		buf = new VertexBuffer(PrimitiveType::Triangles, VertexBuffer::Dynamic);
 
 	unique_lock<mutex> lock(vtermLock);
 
 	for (;;) {
+		redrawConditional.wait(lock);
 
 		update();
 		if (!running)
@@ -158,7 +160,7 @@ void Terminal::thRedrawerFunction() {
 
 		if (drawUseVertexBufferObject) {
 			if (buf->getVertexCount() < arr.size())
-				buf->create(max((size_t)(cols * rows * (size_t)4), arr.size()));
+				buf->create(max(((size_t)cols * rows * (size_t)4), arr.size()));
 			buf->update(arr.data(), arr.size(), 0);
 			drawRenderTarget->draw(*buf, 0, arr.size(), &drawFont->getTexture(charSize));
 		} else
@@ -166,8 +168,6 @@ void Terminal::thRedrawerFunction() {
 
 		if (cbRedrawPost)
 			cbRedrawPost();
-
-		redrawConditional.wait(lock);
 	}
 	lock.unlock();
 

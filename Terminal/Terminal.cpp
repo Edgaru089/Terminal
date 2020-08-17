@@ -6,6 +6,13 @@
 #include <climits>
 #include <cstring>
 
+#define ASSERT(expr) do{\
+	if(!(expr)){\
+		fprintf(stderr,"Debug Assertion Failed on line %d, in function %s:\n  Expression: %s\n",__LINE__,__func__,#expr);\
+		abort();\
+	}\
+}while(false)
+
 using namespace std;
 using namespace sf;
 
@@ -55,6 +62,7 @@ public:
 			return 1;
 		case VTERM_PROP_CURSORSHAPE:
 			term->cursorShape = val->number;
+			term->invalidate();
 			return 1;
 		case VTERM_PROP_MOUSE:
 			term->mouseState = val->number;
@@ -160,6 +168,8 @@ Terminal::Terminal(
 	vterm_output_set_callback(term, &TermCb::writeCall, reinterpret_cast<void*>(this));
 	vterm_set_size(term, rows, cols);
 
+	thRedrawer = new thread(&Terminal::thRedrawerFunction, this);
+
 	thReader = new thread(
 		[this] {
 			size_t readlen;
@@ -173,8 +183,6 @@ Terminal::Terminal(
 			running = false;
 		}
 	);
-
-	thRedrawer = new thread(&Terminal::thRedrawerFunction, this);
 
 	// Looks like there's no much to do about the frontend instance
 }
@@ -206,6 +214,7 @@ void Terminal::stop() {
 
 
 void Terminal::invalidate() {
+	ASSERT(!vtermLock.try_lock() && "vtermLock should be locked when calling Terminal::invalidate()");
 	redrawConditional.notify_one();
 }
 

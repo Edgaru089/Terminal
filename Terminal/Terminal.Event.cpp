@@ -27,7 +27,7 @@ namespace {
 
 void Terminal::processEvent(RenderWindow& win, Event e) {
 
-	lock_guard<mutex> g(vtermLock);
+	//lock_guard<mutex> g(vtermLock);
 
 	switch (e.type) {
 	case Event::TextEntered:
@@ -201,13 +201,11 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 		}
 		break;
 	}
-#ifndef SFML_SYSTEM_WINDOWS
 	case Event::GainedFocus:
 	{
 		invalidate();
 		break;
 	}
-#endif
 	}
 }
 
