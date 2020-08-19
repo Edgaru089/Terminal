@@ -88,6 +88,7 @@ int main(int argc, char* argv[]) {
 	bool useVbo = VertexBuffer::isAvailable();
 	int scrollMaxLines = atoi(option.get("scrollback_max_lines").c_str());
 	bool useWslExe = option.get("use_wsl_exe") == "true";
+	int updateRate = atoi(option.get("update_rate").c_str());
 
 	if (!bgFilename.empty()) {
 		if (!bgTexture.loadFromFile(bgFilename))
@@ -125,8 +126,11 @@ int main(int argc, char* argv[]) {
 		win->setMouseCursorVisible(false);
 	}
 	win->setKeyRepeatEnabled(true);
-	win->setVerticalSyncEnabled(true);
-	//win->setFramerateLimit(60);
+
+	if (!updateRate)
+		win->setVerticalSyncEnabled(true);
+	else
+		win->setFramerateLimit(updateRate);
 
 	VertexBuffer buf(PrimitiveType::Triangles, VertexBuffer::Dynamic);
 	if (useVbo)
@@ -155,12 +159,15 @@ int main(int argc, char* argv[]) {
 
 	term->invalidate();
 
+	Clock cl;
 	while (win->isOpen()) {
+
+		cl.restart();
 
 		term->update();
 
 		bool redrawn;
-		if ((redrawn = term->redrawIfRequired(font, arr, bgDarkness == 255 ? Color::Black : Color(0, 0, 0, bgDarkness))) || fullscreen) {
+		if ((redrawn = term->redrawIfRequired(font, arr, bgDarkness == 255 ? Color::Black : Color(0, 0, 0, bgDarkness))) || fullscreen || !updateRate) {
 			win->clear();
 
 			if (bgDarkness != 255)
@@ -213,8 +220,8 @@ int main(int argc, char* argv[]) {
 		if (!term->isRunning())
 			win->close();
 
-		if (!(redrawn || fullscreen))
-			sleep(microseconds(2000));
+		if (!(redrawn || fullscreen) && updateRate)
+			sleep(max(microseconds(0), seconds(1.0f / updateRate) - cl.getElapsedTime()));
 	}
 
 	delete win;
