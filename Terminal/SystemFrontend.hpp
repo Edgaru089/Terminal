@@ -52,6 +52,9 @@ private:
 	std::thread* processRunningChecker = 0;
 #else
 	int pty, child;
+public:
+	int getPtyFd() { return pty; }
+	int getChild() { return child; }
 #endif
 
 };

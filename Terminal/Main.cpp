@@ -27,6 +27,13 @@
 #include <signal.h>
 #endif
 
+#include "imgui/imconfig.h"
+#include "imgui/imconfig-SFML.h"
+#include "imgui/imgui.h"
+#include "imgui/imgui-SFML.h"
+#include "imgui/imgui_freetype.h"
+#define imgui ImGui
+
 using namespace std;
 using namespace sf;
 
@@ -43,6 +50,7 @@ Terminal* term;
 
 RenderWindow* win;
 
+void runImGui(Terminal* term, RenderWindow* win);
 
 Sprite coverAutoscale(Texture& texture, Vector2f asize) {
 	Sprite sp(texture);
@@ -59,27 +67,28 @@ Sprite coverAutoscale(Texture& texture, Vector2f asize) {
 	return sp;
 }
 
+const double menuCharFactor = 0.9;
 
 int main(int argc, char* argv[]) {
 
 	option.loadFromFile("Terminal.ini");
 	int rows, cols;
 	Vector2i cellSize = Vector2i(atoi(option.get("cell_width").c_str()), atoi(option.get("cell_height").c_str()));
-	int charSize = atoi(option.get("fontsize").c_str());
+	int charSize = atoi(option.get("fontsize").c_str()), menuOffset = (int)(charSize * menuCharFactor) + 2;
 	bool useBold = option.get("use_bold") == "true";
 	VideoMode mode;
 	bool fullscreen = (argc > 1 && strcmp(argv[1], "--fullscreen") == 0);
 	if (fullscreen) {
 		mode = VideoMode::getDesktopMode();
 		cols = mode.width / cellSize.x;
-		rows = mode.height / cellSize.y;
+		rows = ((mode.height - menuOffset) / cellSize.y);
 		const string& rc = option.get("run_on_startup");
 		if (!rc.empty())
 			system(rc.c_str());
 	} else {
 		rows = atoi(option.get("rows").c_str());
 		cols = atoi(option.get("cols").c_str());
-		mode = VideoMode(cols * cellSize.x, rows * cellSize.y);
+		mode = VideoMode(cols * cellSize.x, rows * cellSize.y + menuOffset);
 	}
 	string bgFilename = option.get("background_image");
 	Uint8 bgDarkness = atoi(option.get("bg_darkness").c_str());
@@ -105,10 +114,12 @@ int main(int argc, char* argv[]) {
 	Font font;
 #ifdef SFML_SYSTEM_WINDOWS
 	//font.loadFromFile("C:\\Windows\\Fonts\\ConsolasDengXianSemiBold.ttf");
-	font.loadFromFile("C:\\Windows\\Fonts\\" + option.get("font"));
+	string fontFile = "C:\\Windows\\Fonts\\" + option.get("font");
+	font.loadFromFile(fontFile);
 #else
+	string fontFile = "/usr/share/fonts/" + option.get("font");
 	//font.loadFromFile("/mnt/c/Windows/Fonts/ConsolasDengXianSemiBold.ttf");
-	if (!font.loadFromFile("/usr/share/fonts/" + option.get("font")))
+	if (!font.loadFromFile(fontFile))
 		if (!font.loadFromFile("/mnt/Windows/Windows/Fonts/ConsolasDengXianSemiBold.ttf"))
 			if (!font.loadFromFile("/mnt/c/Windows/Fonts/ConsolasDengXianSemiBold.ttf"))
 				font.loadFromFile("/usr/share/fonts/truetype/unifont/unifont.ttf");
@@ -157,50 +168,63 @@ int main(int argc, char* argv[]) {
 		win->setTitle(String::fromUtf8(title.begin(), title.end()));
 	};
 
+	term->offsetY = menuOffset;
+
 	term->invalidate();
 
-	Clock cl;
+	imgui::SFML::Init(*win, false);
+	imgui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 0);
+	imgui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+	imgui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0,0));
+	imgui::PushStyleColor(ImGuiCol_WindowBg, Color(0,0,0,160));
+	imgui::GetIO().Fonts->AddFontFromFileTTF(fontFile.c_str(), (int)(charSize * menuCharFactor), 0, imgui::GetIO().Fonts->GetGlyphRangesChineseSimplifiedCommon());
+	ImGuiFreeType::BuildFontAtlas(imgui::GetIO().Fonts, ImGuiFreeType::ForceAutoHint /*| ImGuiFreeType::MonoHinting*/);
+	imgui::SFML::UpdateFontTexture();
+
+	Clock cl, delta;
 	while (win->isOpen()) {
 
 		cl.restart();
 
+		imgui::SFML::Update(*win, delta.restart());
 		term->update();
 
-		bool redrawn;
-		if ((redrawn = term->redrawIfRequired(font, arr, bgDarkness == 255 ? Color::Black : Color(0, 0, 0, bgDarkness))) || fullscreen || !updateRate) {
-			win->clear();
 
-			if (bgDarkness != 255)
-				win->draw(bgSprite);
+		bool redrawn = term->redrawIfRequired(font, arr, bgDarkness == 255 ? Color::Black : Color(0, 0, 0, bgDarkness));
+		win->clear();
 
-			if (useVbo) {
-				if (redrawn)
-					buf.update(arr.data(), arr.size(), 0);
-				win->draw(buf, 0, arr.size(), &font.getTexture(charSize));
-			} else
-				win->draw(arr.data(), arr.size(), PrimitiveType::Triangles, &font.getTexture(charSize));
+		if (bgDarkness != 255)
+			win->draw(bgSprite);
 
-			if (fullscreen) {
-				arrtop.clear();
-				const Vector2f pos(Mouse::getPosition(*win));
-				const float sqrt2 = 1.414213562f;
-				const Vector2f off1(0, 16), off2(8 * sqrt2, 8 * sqrt2);
-				arrtop.append(Vertex(pos, Color::White));
-				arrtop.append(Vertex(pos + off1, Color::White));
-				arrtop.append(Vertex(pos + Vector2f(8, 8), Color::White));
-				arrtop.append(Vertex(pos, Color::White));
-				arrtop.append(Vertex(pos + off2, Color::White));
-				arrtop.append(Vertex(pos + Vector2f(0, 8 * sqrt2), Color::White));
-				win->draw(arrtop);
-			}
+		if (useVbo) {
+			if (redrawn)
+				buf.update(arr.data(), arr.size(), 0);
+			win->draw(buf, 0, arr.size(), &font.getTexture(charSize));
+		} else
+			win->draw(arr.data(), arr.size(), PrimitiveType::Triangles, &font.getTexture(charSize));
 
-			win->display();
-
+		if (fullscreen) {
+			arrtop.clear();
+			const Vector2f pos(Mouse::getPosition(*win));
+			const float sqrt2 = 1.414213562f;
+			const Vector2f off1(0, 16), off2(8 * sqrt2, 8 * sqrt2);
+			arrtop.append(Vertex(pos, Color::White));
+			arrtop.append(Vertex(pos + off1, Color::White));
+			arrtop.append(Vertex(pos + Vector2f(8, 8), Color::White));
+			arrtop.append(Vertex(pos, Color::White));
+			arrtop.append(Vertex(pos + off2, Color::White));
+			arrtop.append(Vertex(pos + Vector2f(0, 8 * sqrt2), Color::White));
+			win->draw(arrtop);
 		}
+
+		runImGui(term, win);
+		imgui::EndFrame();
+		imgui::SFML::Render(*win);
 
 		Event e;
 		e.type = Event::Count;
 		while (win->pollEvent(e)) {
+			imgui::SFML::ProcessEvent(e);
 			if (e.type == Event::Closed)
 				win->close();
 			else if (e.type == Event::Resized) {
@@ -214,18 +238,23 @@ int main(int argc, char* argv[]) {
 
 				bgSprite = coverAutoscale(bgTexture, Vector2f(e.size.width, e.size.height));
 			}
-			term->processEvent(*win, e);
+
+			if (!(imgui::GetIO().WantCaptureKeyboard && (e.type == Event::TextEntered)) && !(imgui::GetIO().WantCaptureMouse && (e.type == Event::MouseButtonPressed || e.type == Event::MouseButtonReleased || e.type == Event::MouseMoved)))
+				term->processEvent(*win, e);
 		}
+
 
 		if (!term->isRunning())
 			win->close();
 
-		if (!(redrawn || fullscreen) && updateRate)
+
+		win->display();
+		if (updateRate)
 			sleep(max(microseconds(0), seconds(1.0f / updateRate) - cl.getElapsedTime()));
 	}
 
-	delete win;
-	delete term;
+	//delete win;
+	//delete term;
 
 	return 0;
 }

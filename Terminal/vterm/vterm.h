@@ -498,6 +498,7 @@ typedef enum {
 int vterm_screen_get_attrs_extent(const VTermScreen *screen, VTermRect *extent, VTermPos pos, VTermAttrMask attrs);
 
 int vterm_screen_get_cell(const VTermScreen *screen, VTermPos pos, VTermScreenCell *cell);
+int vterm_screen_get_cell_buf(const VTermScreen* screen, int buf, VTermPos pos, VTermScreenCell *cell); // buf can be 0(primary) or 1(alternative)
 
 int vterm_screen_is_eol(const VTermScreen *screen, VTermPos pos);
 

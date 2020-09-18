@@ -61,11 +61,26 @@ public:
 		return lastError;
 	}
 
+	Frontend* getFrontend(){
+		return frontend;
+	}
+
+	bool isAltScreenOn() { return altScreen; }
+
 public:
 
 	std::function<void()> bell;
 	std::function<void(std::string)> cbSetWindowTitle;
 	std::function<void(int width, int height)> cbSetWindowSize;
+
+public:
+
+	// offsetX and offsetY is added to all rendering and
+	// subtracted from mouse events
+	int offsetX = 0, offsetY = 0;
+
+	// Is the alt-screen rendered(temporarily)?
+	bool renderAltScreen = false;
 
 private:
 

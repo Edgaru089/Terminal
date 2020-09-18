@@ -77,6 +77,17 @@ static inline ScreenCell *getcell(const VTermScreen *screen, int row, int col)
   return screen->buffer + (screen->cols * row) + col;
 }
 
+static inline ScreenCell *getcell_buf(const VTermScreen *screen, int buf, int row, int col)
+{
+  if(buf < 0 || buf > 1 || !screen->buffers[buf])
+    return NULL;
+  if(row < 0 || row >= screen->rows)
+    return NULL;
+  if(col < 0 || col >= screen->cols)
+    return NULL;
+  return screen->buffers[buf] + (screen->cols * row) + col;
+}
+
 static ScreenCell *realloc_buffer(VTermScreen *screen, ScreenCell *buffer, int new_rows, int new_cols)
 {
   ScreenCell *new_buffer = vterm_allocator_malloc(screen->vt, sizeof(ScreenCell) * new_rows * new_cols);
@@ -762,6 +773,42 @@ int vterm_screen_get_cell(const VTermScreen *screen, VTermPos pos, VTermScreenCe
 
   if(pos.col < (screen->cols - 1) &&
      getcell(screen, pos.row, pos.col + 1)->chars[0] == (uint32_t)-1)
+    cell->width = 2;
+  else
+    cell->width = 1;
+
+  return 1;
+}
+
+/* Copy internal to external representation of a screen cell */
+int vterm_screen_get_cell_buf(const VTermScreen *screen, int buf, VTermPos pos, VTermScreenCell *cell)
+{
+  ScreenCell *intcell = getcell_buf(screen, buf, pos.row, pos.col);
+  if(!intcell)
+    return 0;
+
+  for(int i = 0; i < VTERM_MAX_CHARS_PER_CELL; i++) {
+    cell->chars[i] = intcell->chars[i];
+    if(!intcell->chars[i])
+      break;
+  }
+
+  cell->attrs.bold      = intcell->pen.bold;
+  cell->attrs.underline = intcell->pen.underline;
+  cell->attrs.italic    = intcell->pen.italic;
+  cell->attrs.blink     = intcell->pen.blink;
+  cell->attrs.reverse   = intcell->pen.reverse ^ screen->global_reverse;
+  cell->attrs.strike    = intcell->pen.strike;
+  cell->attrs.font      = intcell->pen.font;
+
+  cell->attrs.dwl = intcell->pen.dwl;
+  cell->attrs.dhl = intcell->pen.dhl;
+
+  cell->fg = intcell->pen.fg;
+  cell->bg = intcell->pen.bg;
+
+  if(pos.col < (screen->cols - 1) &&
+     getcell_buf(screen, buf, pos.row, pos.col + 1)->chars[0] == (uint32_t)-1)
     cell->width = 2;
   else
     cell->width = 1;

@@ -1,6 +1,7 @@
 
 #include "Terminal.hpp"
 #include "vterm/vterm.h"
+#include "vterm/vterm_internal.h"
 
 #include <cmath>
 
@@ -48,8 +49,8 @@ namespace {
 
 bool Terminal::redrawIfRequired(Font& font, vector<Vertex>& target, Color bgColor) {
 	if (needRedraw) {
-		needRedraw = false;
 		forceRedraw(font, target, bgColor);
+		needRedraw = false;
 		return true;
 	} else
 		return false;
@@ -67,7 +68,7 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 
 	target.clear();
 	if (bgColor != Color::Black)
-		pushVertexColor(target, FloatRect(0, 0, (cols + 1) * cellSize.x, (rows + 1) * cellSize.y), bgColor);
+		pushVertexColor(target, FloatRect(offsetX, offsetY, (cols + 1) * cellSize.x, (rows + 1) * cellSize.y), bgColor);
 
 	VTermPos curpos;
 	VTermScreen* scr = vterm_obtain_screen(term);
@@ -78,8 +79,8 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 
 			VTermScreenCell cell;
 
-			if (altScreen) {
-				if (!vterm_screen_get_cell(scr, VTermPos{ i, j }, &cell))
+			if (renderAltScreen) {
+				if (!vterm_screen_get_cell_buf(scr, 1, VTermPos{ i, j }, &cell))
 					continue;
 			} else {
 				if (i < scrollbackOffset) {
@@ -88,14 +89,14 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 						cell = line[j];
 					else
 						continue;
-				} else if (!vterm_screen_get_cell(scr, VTermPos{ i - scrollbackOffset, j }, &cell))
+				} else if (!vterm_screen_get_cell_buf(scr, 0, VTermPos{ i - scrollbackOffset, j }, &cell))
 					continue;
 			}
 
 			vterm_state_convert_color_to_rgb(vterm_obtain_state(term), &cell.fg);
 			vterm_state_convert_color_to_rgb(vterm_obtain_state(term), &cell.bg);
 
-			FloatRect cellRect(j * cellSize.x, i * cellSize.y, cellSize.x * cell.width, cellSize.y);
+			FloatRect cellRect(j * cellSize.x + offsetX, i * cellSize.y + offsetY, cellSize.x * cell.width, cellSize.y);
 
 			Color bg(cell.bg.rgb.red, cell.bg.rgb.green, cell.bg.rgb.blue);
 			Color fg(cell.fg.rgb.red, cell.fg.rgb.green, cell.fg.rgb.blue);
@@ -134,9 +135,9 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 				Glyph glyph = font.getGlyph(cell.chars[0], charSize, hasBold && cell.attrs.bold, 0.0F);
 
 				FloatRect renderRect;
-				renderRect.left = roundf(j * cellSize.x + (cellSize.x * cell.width - glyph.advance) / 2.0f + glyph.bounds.left);
+				renderRect.left = roundf(j * cellSize.x + (cellSize.x * cell.width - glyph.advance) / 2.0f + glyph.bounds.left) + offsetX;
 				renderRect.width = glyph.bounds.width;
-				renderRect.top = roundf((i + 1) * cellSize.y + glyph.bounds.top - charTopOffset);
+				renderRect.top = roundf((i + 1) * cellSize.y + glyph.bounds.top - charTopOffset) + offsetY;
 				renderRect.height = glyph.bounds.height;
 
 				pushVertexTextureColor(target, renderRect, glyph.textureRect, fg);
@@ -144,5 +145,6 @@ void Terminal::forceRedraw(Font& font, vector<Vertex>& target, Color bgColor) {
 
 			j += cell.width - 1;
 		}
+
 }
 

@@ -60,7 +60,7 @@ public:
 			term->mouseState = val->number;
 			return 1;
 		case VTERM_PROP_ALTSCREEN:
-			term->altScreen = (bool)val->boolean;
+			term->renderAltScreen = term->altScreen = (bool)val->boolean;
 			return 1;
 		default:
 			return 1;

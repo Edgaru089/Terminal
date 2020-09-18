@@ -107,20 +107,21 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 	}
 	case Event::MouseWheelMoved:
 	{
-		if (mouseState != VTERM_PROP_MOUSE_NONE) {
-			vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), true, getModifier());
-			vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), false, getModifier());
-		} else if (altScreen) {
-			// Let's press the UP/DOWN key 3 times
-			VTermModifier mod = getModifier();
-			if (e.mouseWheel.delta > 0) {
-				vterm_keyboard_key(term, VTERM_KEY_UP, mod);
-				vterm_keyboard_key(term, VTERM_KEY_UP, mod);
-				vterm_keyboard_key(term, VTERM_KEY_UP, mod);
-			} else {
-				vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
-				vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
-				vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
+		if (renderAltScreen) {
+			if (mouseState != VTERM_PROP_MOUSE_NONE) {
+				vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), true, getModifier());
+				vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), false, getModifier());
+			} else { // Let's press the UP/DOWN key 3 times
+				VTermModifier mod = getModifier();
+				if (e.mouseWheel.delta > 0) {
+					vterm_keyboard_key(term, VTERM_KEY_UP, mod);
+					vterm_keyboard_key(term, VTERM_KEY_UP, mod);
+					vterm_keyboard_key(term, VTERM_KEY_UP, mod);
+				} else {
+					vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
+					vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
+					vterm_keyboard_key(term, VTERM_KEY_DOWN, mod);
+				}
 			}
 		} else {
 			// Let's scroll back/forth
@@ -193,9 +194,9 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 	}
 	case Event::Resized:
 	{
-		if (e.size.width / cellSize.x != cols || e.size.height / cellSize.y != rows) {
-			cols = e.size.width / cellSize.x;
-			rows = e.size.height / cellSize.y;
+		if ((e.size.width - offsetX) / cellSize.x != cols || (e.size.height - offsetY) / cellSize.y != rows) {
+			cols = (e.size.width - offsetX) / cellSize.x;
+			rows = (e.size.height - offsetY) / cellSize.y;
 			vterm_set_size(term, rows, cols);
 
 			frontend->resizeTerminal(rows, cols);
