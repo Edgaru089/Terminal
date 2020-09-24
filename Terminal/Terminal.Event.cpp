@@ -1,4 +1,6 @@
 
+#include "imgui/imgui.h"
+
 #include "Terminal.hpp"
 #include "vterm/vterm.h"
 #include "vterm/vterm_keycodes.h"
@@ -30,6 +32,8 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 	switch (e.type) {
 	case Event::TextEntered:
 	{
+		if (ImGui::GetIO().WantCaptureMouse)
+			break;
 		VTermModifier mod = getModifier();
 		if (e.text.unicode <= 31 && mod & VTERM_MOD_CTRL) {
 			// Control characters produced by <CTRL-x> keystrokes
@@ -93,6 +97,8 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 	case Event::MouseButtonPressed:
 	case Event::MouseButtonReleased:
 	{
+		if (ImGui::GetIO().WantCaptureMouse)
+			break;
 		if (mouseState != VTERM_PROP_MOUSE_NONE) {
 			int b = 0;
 			if (e.mouseButton.button == Mouse::Left)
@@ -107,6 +113,8 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 	}
 	case Event::MouseWheelMoved:
 	{
+		if (ImGui::GetIO().WantCaptureMouse)
+			break;
 		if (renderAltScreen) {
 			if (mouseState != VTERM_PROP_MOUSE_NONE) {
 				vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), true, getModifier());
@@ -138,6 +146,8 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 	}
 	case Event::KeyPressed:
 	{
+		if (ImGui::GetIO().WantCaptureKeyboard)
+			break;
 		VTermModifier mod = getModifier();
 		VTermKey key = VTERM_KEY_NONE;
 		switch (e.key.code) {

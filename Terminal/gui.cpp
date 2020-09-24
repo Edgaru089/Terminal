@@ -52,9 +52,28 @@ namespace {
 			return string();
 	}
 
+	bool sortMixedCaps(const fs::directory_entry& x, const fs::directory_entry& y){
+		string fx=x.path().filename().u8string(), fy=y.path().filename().u8string();
+		for(int i=0;i<max(fx.length(),fy.length());i++){
+			if(fx.length()<=i)
+				return true;
+			if(fy.length()<=i)
+				return false;
+			if(tolower(fx[i])!=tolower(fy[i])){
+				return tolower(fx[i])<tolower(fy[i]);
+			}else{
+				if(fx[i]<fy[i])
+					return true;
+				else if(fx[i]>fy[i])
+					return false;
+			}
+		}
+		return false;
+	}
+
 }
 
-void folderTreeGui(const fs::path& path, function<void()> onClick, function<void()> onDoubleClick){
+void folderTreeGui(const fs::path& path, function<void(const string& u8path)> onClick, function<void(const string& u8path)> onDoubleClick){
 	vector<fs::directory_entry> folders, files;
 	try{
 		for(auto& f : fs::directory_iterator(path))
@@ -63,8 +82,8 @@ void folderTreeGui(const fs::path& path, function<void()> onClick, function<void
 			else
 				files.push_back(f);
 
-		sort(folders.begin(),folders.end());
-		sort(files.begin(),files.end());
+		sort(folders.begin(),folders.end(),sortMixedCaps);
+		sort(files.begin(),files.end(),sortMixedCaps);
 	}catch(fs::filesystem_error e){
 		imgui::PushStyleColor(ImGuiCol_Text, ImVec4{1.0f,0.2f,0.2f,1.0f});
 		imgui::TextUnformatted("ERROR:");
@@ -81,8 +100,10 @@ void folderTreeGui(const fs::path& path, function<void()> onClick, function<void
 
 	for(auto& f:files)
 		if(imgui::TreeNodeEx(f.path().filename().u8string().c_str(),ImGuiTreeNodeFlags_Leaf|ImGuiTreeNodeFlags_SpanAvailWidth|ImGuiTreeNodeFlags_SpanFullWidth)){
-
 			imgui::TreePop();
+
+			if(imgui::IsItemHovered()&&imgui::IsMouseDoubleClicked(0))
+				onDoubleClick(f.path().u8string());
 		}
 }
 
@@ -147,7 +168,14 @@ void runImGui(Terminal* term, RenderWindow* win) {
 			imgui::TextUnformatted(((string)(folder)).c_str());
 			imgui::Separator();
 
-			folderTreeGui(folder,[](){},[](){});
+			folderTreeGui(folder,[](const string&){},[=](const string& p){
+				static char buf[128];
+				if(imgui::GetIO().KeyShift)
+					sprintf(buf,":vs %s\r",p.c_str());
+				else
+					sprintf(buf,":tabe %s\r",p.c_str());
+				f->write(buf,strlen(buf));
+			});
 		}
 		imgui::End();
 
