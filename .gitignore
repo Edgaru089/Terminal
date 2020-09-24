@@ -10,6 +10,7 @@ Terminal/Terminal
 Terminal/wsl-backend/wsl-backend
 [Rr]esource.*
 *.ico
+Terminal/imgui.ini
 
 # User-specific files
 *.suo
