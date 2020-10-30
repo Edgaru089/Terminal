@@ -88,7 +88,8 @@ int main(int argc, char* argv[]) {
 	bool useVbo = VertexBuffer::isAvailable();
 	int scrollMaxLines = atoi(option.get("scrollback_max_lines").c_str());
 	bool useWslExe = option.get("use_wsl_exe") == "true";
-	int updateRate = atoi(option.get("update_rate").c_str());
+	int cfgUpdateRate = atoi(option.get("update_rate").c_str());
+	int updateRate = cfgUpdateRate;
 
 	if (!bgFilename.empty()) {
 		if (!bgTexture.loadFromFile(bgFilename))
@@ -213,7 +214,10 @@ int main(int argc, char* argv[]) {
 				}
 
 				bgSprite = coverAutoscale(bgTexture, Vector2f(e.size.width, e.size.height));
-			}
+			} else if (e.type == Event::GainedFocus)
+				updateRate = cfgUpdateRate;
+			else if (e.type == Event::LostFocus)
+				updateRate = 10;
 			term->processEvent(*win, e);
 		}
 
