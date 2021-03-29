@@ -3,6 +3,8 @@
 #include "vterm/vterm.h"
 #include "vterm/vterm_keycodes.h"
 
+#include <cmath>
+
 using namespace std;
 using namespace sf;
 
@@ -70,6 +72,10 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 			break;
 		}
 
+		// Replace \n with \r
+		if (e.text.unicode == '\n')
+			e.text.unicode = '\r';
+
 		fprintf(stderr, "Main: Event::TextEntered, keycode=%d(%c), Ctrl:%s, Shift:%s, Alt:%s\n", (int)e.text.unicode, (char)e.text.unicode,
 			(mod & VTERM_MOD_CTRL) ? "Yes" : "No", (mod & VTERM_MOD_SHIFT) ? "Yes" : "No", (mod & VTERM_MOD_ALT) ? "Yes" : "No");
 		vterm_keyboard_unichar(term, e.text.unicode, mod);
@@ -105,15 +111,24 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 		}
 		break;
 	}
+#ifdef SFML_SYSTEM_MACOS
+	case Event::MouseWheelScrolled:
+	{
+		if (fabs(e.mouseWheelScroll.delta) < 1e-5)
+			break;
+		bool up = e.mouseWheelScroll.delta > 0;
+#else
 	case Event::MouseWheelMoved:
 	{
+		bool up = e.mouseWheel.delta > 0;
+#endif
 		if (mouseState != VTERM_PROP_MOUSE_NONE) {
-			vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), true, getModifier());
-			vterm_mouse_button(term, ((e.mouseWheel.delta > 0) ? 4 : 5), false, getModifier());
+			vterm_mouse_button(term, (up ? 4 : 5), true, getModifier());
+			vterm_mouse_button(term, (up ? 4 : 5), false, getModifier());
 		} else if (altScreen) {
 			// Let's press the UP/DOWN key 3 times
 			VTermModifier mod = getModifier();
-			if (e.mouseWheel.delta > 0) {
+			if (up) {
 				vterm_keyboard_key(term, VTERM_KEY_UP, mod);
 				vterm_keyboard_key(term, VTERM_KEY_UP, mod);
 				vterm_keyboard_key(term, VTERM_KEY_UP, mod);
@@ -126,7 +141,7 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 			// Let's scroll back/forth
 			if (scrollbackOffset < 0)
 				scrollbackOffset = -scrollbackOffset;
-			if (e.mouseWheel.delta > 0) {
+			if (up) {
 				scrollbackOffset = min(scrollbackOffset + 3, (int)scrollback.size());
 			} else {
 				scrollbackOffset = max(scrollbackOffset - 3, 0);
@@ -178,6 +193,43 @@ void Terminal::processEvent(RenderWindow& win, Event e) {
 			break;
 #endif
 		}
+#ifdef SFML_SYSTEM_MACOS
+		// On macOS, most CTRL-X keys does not count as TextInput events
+		// We have to fill them in ourselves
+		if (e.key.code >= Keyboard::A && e.key.code <= Keyboard::Z || e.key.code == Keyboard::LBracket || e.key.code == Keyboard::RBracket) {
+			if (Keyboard::isKeyPressed(Keyboard::LControl) || Keyboard::isKeyPressed(Keyboard::RControl)) {
+				VTermModifier mod = getModifier();
+				int code;
+				if (e.key.code >= Keyboard::A && e.key.code <= Keyboard::Z)
+					code = e.key.code - Keyboard::A + ((mod & VTERM_MOD_SHIFT) ? 'A' : 'a');
+				else {
+					switch (e.key.code) {
+					case Keyboard::LBracket:
+						code = '['; break;
+					case Keyboard::RBracket:
+						code = ']'; break;
+					}
+				}
+
+				// Let's not forget pasting
+				if (code == 'V') {
+					fprintf(stderr, "Paste (macOS)\n");
+					vterm_keyboard_start_paste(term);
+					String s = Clipboard::getString();
+					for (Uint32 c : s) {
+						if (c == '\r')
+							continue;
+						vterm_keyboard_unichar(term, c, VTermModifier(0));
+					}
+					vterm_keyboard_end_paste(term);
+				} else {
+					fprintf(stderr, "Main: TextEnter(macOS), keycode=%d(%c), Ctrl:%s, Shift:%s, Alt:%s\n", (int)code, (char)code,
+						(mod & VTERM_MOD_CTRL) ? "Yes" : "No", (mod & VTERM_MOD_SHIFT) ? "Yes" : "No", (mod & VTERM_MOD_ALT) ? "Yes" : "No");
+					vterm_keyboard_unichar(term, code, mod);
+				}
+			}
+		}
+#endif
 		if (e.key.code >= Keyboard::F1 && e.key.code <= Keyboard::F15)
 			key = (VTermKey)(VTERM_KEY_FUNCTION((int)e.key.code - Keyboard::F1 + 1));
 		if (key != VTERM_KEY_NONE)

@@ -14,7 +14,6 @@
 #define NOMINMAX
 #include <windows.h>
 #else
-#include <pty.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>

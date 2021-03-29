@@ -19,7 +19,6 @@
 #include <Windows.h>
 #include <signal.h>
 #else
-#include <pty.h>
 #include <errno.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -62,7 +61,8 @@ Sprite coverAutoscale(Texture& texture, Vector2f asize) {
 
 int main(int argc, char* argv[]) {
 
-	option.loadFromFile("Terminal.ini");
+	if (!option.loadFromFile("Terminal.ini"))
+		option.loadFromFile("~/Terminal.ini");
 	int rows, cols;
 	Vector2i cellSize = Vector2i(atoi(option.get("cell_width").c_str()), atoi(option.get("cell_height").c_str()));
 	int charSize = atoi(option.get("fontsize").c_str());
@@ -104,16 +104,7 @@ int main(int argc, char* argv[]) {
 		bgSprite = coverAutoscale(bgTexture, Vector2f(mode.width, mode.height));
 
 	Font font;
-#ifdef SFML_SYSTEM_WINDOWS
-	//font.loadFromFile("C:\\Windows\\Fonts\\ConsolasDengXianSemiBold.ttf");
-	font.loadFromFile("C:\\Windows\\Fonts\\" + option.get("font"));
-#else
-	//font.loadFromFile("/mnt/c/Windows/Fonts/ConsolasDengXianSemiBold.ttf");
-	if (!font.loadFromFile("/usr/share/fonts/" + option.get("font")))
-		if (!font.loadFromFile("/mnt/Windows/Windows/Fonts/ConsolasDengXianSemiBold.ttf"))
-			if (!font.loadFromFile("/mnt/c/Windows/Fonts/ConsolasDengXianSemiBold.ttf"))
-				font.loadFromFile("/usr/share/fonts/truetype/unifont/unifont.ttf");
-#endif
+	font.loadFromFile(option.get("font"));
 
 	if (fullscreen)
 		win = new RenderWindow(mode, "Terminal", Style::None);
@@ -159,6 +150,8 @@ int main(int argc, char* argv[]) {
 	};
 
 	term->invalidate();
+
+	win->setActive(true);
 
 	Clock cl;
 	while (win->isOpen()) {
@@ -214,10 +207,10 @@ int main(int argc, char* argv[]) {
 				}
 
 				bgSprite = coverAutoscale(bgTexture, Vector2f(e.size.width, e.size.height));
-			} else if (e.type == Event::GainedFocus)
+			}/* else if (e.type == Event::GainedFocus)
 				updateRate = cfgUpdateRate;
 			else if (e.type == Event::LostFocus)
-				updateRate = 10;
+				updateRate = 10;*/
 			term->processEvent(*win, e);
 		}
 
