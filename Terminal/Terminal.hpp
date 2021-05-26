@@ -102,6 +102,15 @@ private:
 	// One of VTERM_PROP_CURSORSHAPE_BLOCK, VTERM_PROP_CURSORSHAPE_BAR_LEFT, VTERM_PROP_CURSORSHAPE_UNDERLINE
 	int cursorShape = VTERM_PROP_CURSORSHAPE_BLOCK;
 
+#ifdef SFML_SYSTEM_MACOS
+	// Minor hack to get modifier keys states without using Keyboard::isKeyPressed (Part III)
+	bool leftCtrlDown = false, rightCtrlDown = false;
+	bool leftShiftDown = false, rightShiftDown = false;
+	bool leftAltDown = false, rightAltDown = false;
+
+	VTermModifier getModifier();
+#endif
+
 	std::deque<std::vector<VTermScreenCell>> scrollback;
 
 	// Current scrollback offset, from the tail of the buffer

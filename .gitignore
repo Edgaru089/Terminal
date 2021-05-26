@@ -10,6 +10,8 @@ Terminal/Terminal
 Terminal/wsl-backend/wsl-backend
 [Rr]esource.*
 *.ico
+# macOS trash
+.DS_Store
 
 # User-specific files
 *.suo
