@@ -11,8 +11,8 @@ using namespace sf;
 WslFrontend::WslFrontend(const string& backendFilename, const string& wslShell, const string& workingDirWsl, int rows, int cols, bool useWslExe) {
 
 	TcpListener listener;
-	listener.listen(TcpListener::AnyPort, IpAddress("127.0.0.1"));
-	Uint16 port = listener.getLocalPort();
+	listener.listen(TcpListener::AnyPort, IpAddress({127,0,0,1}));
+	uint16_t port = listener.getLocalPort();
 	fprintf(stderr, "WslFrontend::Constructor: Listening on port %d\n", (int)port);
 
 	SetConsoleCP(CP_UTF8);
@@ -80,7 +80,7 @@ WslFrontend::WslFrontend(const string& backendFilename, const string& wslShell, 
 	listener.setBlocking(false);
 	Clock clock;
 	for (;;) {
-		if (listener.accept(*socket) == Socket::Done)
+		if (listener.accept(*socket) == Socket::Status::Done)
 			break;
 		if (clock.getElapsedTime() > seconds(5.0f)) {
 			delete socket;
@@ -97,7 +97,7 @@ WslFrontend::WslFrontend(const string& backendFilename, const string& wslShell, 
 	thReader = new thread(
 		[&]() {
 			Packet pack;
-			while (running && socket->receive(pack) == Socket::Done) {
+			while (running && socket->receive(pack) == Socket::Status::Done) {
 				processPacket(pack);
 				pack.clear();
 			}
@@ -187,9 +187,9 @@ bool WslFrontend::write(const void* data, size_t len) {
 	pack << OPCODE_STRING;
 	//pack << string((const char*)data, len);
 	// Equivalent: This is how they do this
-	pack << (Uint32)len;
+	pack << (uint32_t)len;
 	pack.append(data, len);
-	return socket->send(pack) == Socket::Done;
+	return socket->send(pack) == Socket::Status::Done;
 }
 
 
@@ -198,19 +198,19 @@ void WslFrontend::resizeTerminal(int rows, int cols) {
 		return;
 	static Packet pack;
 	pack.clear();
-	pack << OPCODE_RESIZE << (Int32)rows << (Int32)cols;
+	pack << OPCODE_RESIZE << (int32_t)rows << (int32_t)cols;
 	socket->send(pack);
 }
 
 
 void WslFrontend::processPacket(Packet& p) {
-	Uint8 opcode = 255;
+	uint32_t opcode = 255;
 	p >> opcode;
 	switch (opcode) {
 	case OPCODE_STRING:
 	{
 		bufReadLock.lock();
-		bufRead.insert(bufRead.end(), reinterpret_cast<const char*>(p.getData()) + sizeof(Uint8) + sizeof(Uint32), reinterpret_cast<const char*>(p.getData()) + p.getDataSize());
+		bufRead.insert(bufRead.end(), reinterpret_cast<const char*>(p.getData()) + sizeof(uint8_t) + sizeof(uint32_t), reinterpret_cast<const char*>(p.getData()) + p.getDataSize());
 		bufReadLock.unlock();
 		break;
 	}

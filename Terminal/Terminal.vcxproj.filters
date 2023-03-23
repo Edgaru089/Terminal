@@ -86,9 +86,6 @@
     <None Include="vterm\encoding\uk.inc">
       <Filter>vterm</Filter>
     </None>
-    <None Include="binary1.bin">
-      <Filter>资源文件</Filter>
-    </None>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="vterm\rect.h">
@@ -105,9 +102,6 @@
     </ClInclude>
     <ClInclude Include="vterm\vterm_keycodes.h">
       <Filter>vterm</Filter>
-    </ClInclude>
-    <ClInclude Include="resource.h">
-      <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="Terminal.hpp">
       <Filter>Terminal</Filter>
@@ -127,18 +121,5 @@
     <ClInclude Include="WslOpcodes.hpp">
       <Filter>Frontend</Filter>
     </ClInclude>
-  </ItemGroup>
-  <ItemGroup>
-    <ResourceCompile Include="Resource.rc">
-      <Filter>资源文件</Filter>
-    </ResourceCompile>
-  </ItemGroup>
-  <ItemGroup>
-    <Image Include="Software.ico">
-      <Filter>资源文件</Filter>
-    </Image>
-    <Image Include="Icon.png">
-      <Filter>资源文件</Filter>
-    </Image>
   </ItemGroup>
 </Project>

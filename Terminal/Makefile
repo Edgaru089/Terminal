@@ -2,7 +2,7 @@ VPATH = vterm
 
 CPPFLAGS =
 CFLAGS   = -O2
-CXXFLAGS = -O2 -Wno-unused-result -std=c++11
+CXXFLAGS = -O2 -Wno-unused-result -std=c++17
 LDFLAGS  = -s -Wl,-O2
 LDLIBS   = -lsfml-graphics -lsfml-window -lsfml-system -lpthread -lGL -lGLU -lX11 -lXrandr -ludev -lfreetype -lutil -lm -lstdc++
 
